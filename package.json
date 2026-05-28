@@ -1,0 +1,14 @@
+{
+  "name": "fonto-docs-mcp",
+  "version": "0.1.0",
+  "description": "MCP server for Fonto XML documentation",
+  "type": "module",
+  "scripts": {
+    "start": "node src/server.js",
+    "dev": "node --watch src/server.js"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "license": "MIT"
+}
