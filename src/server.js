@@ -4,6 +4,11 @@ import { handleMcpRequest, MCP_TOOLS } from "./mcp.js";
 
 const PORT = process.env.PORT ?? 8080;
 
+function logEvent(event) {
+  // Structured JSON logs are picked up by Cloud Logging automatically
+  console.log(JSON.stringify({ timestamp: new Date().toISOString(), ...event }));
+}
+
 function json(res, data, status = 200) {
   const body = JSON.stringify(data, null, 2);
   res.writeHead(status, {
@@ -60,10 +65,17 @@ const server = createServer(async (req, res) => {
     } catch {
       return json(res, { error: "Invalid JSON" }, 400);
     }
+    const logMcp = (req) => {
+      if (req.method === "tools/call") {
+        logEvent({ type: "mcp_tool_call", tool: req.params?.name, args: req.params?.arguments });
+      }
+    };
     if (Array.isArray(body)) {
+      body.forEach(logMcp);
       const responses = (await Promise.all(body.map(handleMcpRequest))).filter(Boolean);
       return json(res, responses);
     }
+    logMcp(body);
     const response = await handleMcpRequest(body);
     if (!response) { res.writeHead(202); return res.end(); }
     return json(res, response);
@@ -74,6 +86,7 @@ const server = createServer(async (req, res) => {
     const q = url.searchParams.get("q");
     if (!q) return json(res, { error: "Missing ?q= parameter" }, 400);
     try {
+      logEvent({ type: "http_search", query: q });
       return json(res, { results: await searchDocs(q) });
     } catch (err) {
       return json(res, { error: err.message }, 500);
@@ -84,6 +97,7 @@ const server = createServer(async (req, res) => {
     const slug = url.pathname.slice("/page/".length);
     if (!slug) return json(res, { error: "Missing slug" }, 400);
     try {
+      logEvent({ type: "http_page", slug });
       return text(res, await fetchPage(slug));
     } catch (err) {
       return json(res, { error: err.message }, 500);

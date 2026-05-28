@@ -10,5 +10,9 @@
   "engines": {
     "node": ">=20"
   },
-  "license": "MIT"
+  "license": "MIT",
+  "dependencies": {
+    "fontoxpath": "^3.34.0",
+    "slimdom": "^4.3.5"
+  }
 }
