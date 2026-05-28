@@ -1,11 +1,10 @@
 import { createServer } from "node:http";
-import { searchDocs, fetchPage } from "./fonto.js";
+import { searchDocs, fetchPage, listPages, getRelatedPages } from "./fonto.js";
 import { handleMcpRequest, MCP_TOOLS } from "./mcp.js";
 
 const PORT = process.env.PORT ?? 8080;
 
 function logEvent(event) {
-  // Structured JSON logs are picked up by Cloud Logging automatically
   console.log(JSON.stringify({ timestamp: new Date().toISOString(), ...event }));
 }
 
@@ -43,10 +42,35 @@ async function readBody(req) {
   });
 }
 
+// ---------------------------------------------------------------------------
+// Rate limiter — sliding window, 60 req/min per IP
+// ---------------------------------------------------------------------------
+
+const ipWindows = new Map();
+
+function checkRateLimit(ip) {
+  const now = Date.now();
+  const windowMs = 60_000;
+  const limit = 60;
+
+  const timestamps = (ipWindows.get(ip) || []).filter(t => now - t < windowMs);
+  if (timestamps.length >= limit) return false;
+  timestamps.push(now);
+  ipWindows.set(ip, timestamps);
+  return true;
+}
+
+function getIp(req) {
+  return (req.headers["x-forwarded-for"] || req.socket.remoteAddress || "unknown").split(",")[0].trim();
+}
+
+// ---------------------------------------------------------------------------
+// Server
+// ---------------------------------------------------------------------------
+
 const server = createServer(async (req, res) => {
   const url = new URL(req.url, `http://localhost`);
 
-  // CORS preflight
   if (req.method === "OPTIONS") {
     res.writeHead(204, {
       "Access-Control-Allow-Origin": "*",
@@ -54,6 +78,13 @@ const server = createServer(async (req, res) => {
       "Access-Control-Allow-Headers": "Content-Type",
     });
     return res.end();
+  }
+
+  // Health check bypasses rate limiting
+  if (url.pathname === "/healthz") return text(res, "ok");
+
+  if (!checkRateLimit(getIp(req))) {
+    return json(res, { error: "Rate limit exceeded. Max 60 requests per minute." }, 429);
   }
 
   // ── MCP ────────────────────────────────────────────────────────────────
@@ -93,6 +124,16 @@ const server = createServer(async (req, res) => {
     }
   }
 
+  if (url.pathname === "/pages") {
+    const filter = url.searchParams.get("filter") || undefined;
+    try {
+      logEvent({ type: "http_pages", filter });
+      return json(res, { results: await listPages(filter) });
+    } catch (err) {
+      return json(res, { error: err.message }, 500);
+    }
+  }
+
   if (url.pathname.startsWith("/page/")) {
     const slug = url.pathname.slice("/page/".length);
     if (!slug) return json(res, { error: "Missing slug" }, 400);
@@ -104,20 +145,33 @@ const server = createServer(async (req, res) => {
     }
   }
 
+  if (url.pathname.startsWith("/related/")) {
+    const slug = url.pathname.slice("/related/".length);
+    if (!slug) return json(res, { error: "Missing slug" }, 400);
+    try {
+      logEvent({ type: "http_related", slug });
+      return json(res, { results: await getRelatedPages(slug) });
+    } catch (err) {
+      return json(res, { error: err.message }, 500);
+    }
+  }
+
   // ── Smithery / MCP server card ────────────────────────────────────────
   if (url.pathname === "/.well-known/mcp/server-card.json") {
     return json(res, {
-      serverInfo: { name: "fonto-docs", version: "0.1.0" },
+      serverInfo: { name: "fonto-docs", version: "0.2.0" },
       authentication: { required: false },
       tools: MCP_TOOLS,
-      resources: [],
+      resources: [
+        {
+          uri: "fonto://catalog",
+          name: "Fonto Documentation Catalog",
+          description: "Complete list of all available Fonto XML documentation pages.",
+          mimeType: "application/json",
+        },
+      ],
       prompts: [],
     });
-  }
-
-  // ── Health check (Cloud Run needs this) ───────────────────────────────
-  if (url.pathname === "/healthz") {
-    return text(res, "ok");
   }
 
   // ── Landing page ───────────────────────────────────────────────────────
@@ -167,19 +221,43 @@ function landingPage() {
 <p>Or with Claude Code:</p>
 <pre>claude mcp add --transport http fonto-docs https://fonto-docs.elliat.nl/mcp</pre>
 
+<h2>MCP tools</h2>
+<ul>
+  <li><strong>search_fonto_docs</strong> — Scored keyword search across all pages</li>
+  <li><strong>get_fonto_page</strong> — Fetch a page as Markdown by slug</li>
+  <li><strong>list_fonto_pages</strong> — Browse all pages, optionally filtered by keyword</li>
+  <li><strong>get_related_pages</strong> — Find pages referenced by a given page</li>
+</ul>
+
+<h2>MCP resources</h2>
+<ul>
+  <li><strong>fonto://catalog</strong> — Full page catalog as JSON</li>
+</ul>
 
 <h2>HTTP API</h2>
 
 <div class="endpoint">
   <span class="label">GET</span><code>/search?q={query}</code>
-  <p>Search documentation pages by keyword.</p>
+  <p>Search documentation pages by keyword. Results are ranked by relevance.</p>
   <p>Example: <a href="/search?q=documentsManager">/search?q=documentsManager</a></p>
+</div>
+
+<div class="endpoint">
+  <span class="label">GET</span><code>/pages?filter={keyword}</code>
+  <p>List all documentation pages, optionally filtered by keyword.</p>
+  <p>Example: <a href="/pages?filter=cursor">/pages?filter=cursor</a></p>
 </div>
 
 <div class="endpoint">
   <span class="label">GET</span><code>/page/{slug}</code>
   <p>Fetch a page as Markdown by slug.</p>
   <p>Example: <a href="/page/documentsmanager-f746b3a48442">/page/documentsmanager-f746b3a48442</a></p>
+</div>
+
+<div class="endpoint">
+  <span class="label">GET</span><code>/related/{slug}</code>
+  <p>Get pages referenced by the given page.</p>
+  <p>Example: <a href="/related/documentsmanager-f746b3a48442">/related/documentsmanager-f746b3a48442</a></p>
 </div>
 
 <h2>Source</h2>
