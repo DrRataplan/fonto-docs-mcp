@@ -104,6 +104,17 @@ const server = createServer(async (req, res) => {
     }
   }
 
+  // ── Smithery / MCP server card ────────────────────────────────────────
+  if (url.pathname === "/.well-known/mcp/server-card.json") {
+    return json(res, {
+      serverInfo: { name: "fonto-docs", version: "0.1.0" },
+      authentication: { required: false },
+      tools: MCP_TOOLS,
+      resources: [],
+      prompts: [],
+    });
+  }
+
   // ── Health check (Cloud Run needs this) ───────────────────────────────
   if (url.pathname === "/healthz") {
     return text(res, "ok");
@@ -155,6 +166,7 @@ function landingPage() {
 
 <p>Or with Claude Code:</p>
 <pre>claude mcp add --transport http fonto-docs https://fonto-docs.elliat.nl/mcp</pre>
+
 
 <h2>HTTP API</h2>
 
