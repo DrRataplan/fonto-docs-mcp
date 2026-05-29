@@ -3,7 +3,7 @@
 [![Deploy to Cloud Run](https://github.com/DrRataplan/fonto-docs-mcp/actions/workflows/deploy.yml/badge.svg)](https://github.com/DrRataplan/fonto-docs-mcp/actions/workflows/deploy.yml)
 [![MIT License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
-An MCP server that makes the [Fonto XML documentation](https://documentation.fontoxml.com/) accessible to AI tools like Claude Code, Cursor, and Claude Desktop.
+An MCP server that makes the [Fonto XML documentation](https://documentation.fontoxml.com/) accessible to AI tools like Claude Code, Cursor, and Claude Desktop. **Live at [fonto-docs.elliat.nl](https://fonto-docs.elliat.nl/).**
 
 The Fonto docs are rendered by a JavaScript SPA, which makes them impossible for AI to read directly. This server fetches the underlying XML and converts it to clean, readable Markdown on demand.
 
