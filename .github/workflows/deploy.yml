@@ -42,7 +42,14 @@ jobs:
             --project=fonto-docs-mcp \
             --quiet
 
-      - name: Notify Smithery
+  notify-smithery:
+    name: Notify Smithery
+    runs-on: ubuntu-latest
+    needs: deploy-gcp
+    permissions: {}
+
+    steps:
+      - name: PATCH server metadata
         run: |
           curl -s -X PATCH https://api.smithery.ai/servers/martinmiddel/fonto-docs \
             -H "Authorization: Bearer ${{ secrets.SMITHERY_API_KEY }}" \
