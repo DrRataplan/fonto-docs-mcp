@@ -30,7 +30,7 @@ export const MCP_TOOLS = [
   },
 ];
 
-const MCP_RESOURCES = [
+export const MCP_RESOURCES = [
   {
     uri: "fonto://catalog",
     name: "Fonto Docs Catalog",
