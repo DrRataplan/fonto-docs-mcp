@@ -18,9 +18,28 @@ jobs:
       - run: npm ci
       - run: npm test
 
+  docker-smoke:
+    name: Docker smoke test
+    needs: test
+    runs-on: ubuntu-latest
+    permissions: {}
+
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Build image
+        run: docker build -t fonto-docs-smoke .
+
+      - name: Smoke test
+        run: |
+          docker run -d --name fonto-docs-smoke -p 8080:8080 fonto-docs-smoke
+          sleep 2
+          curl --retry 5 --retry-delay 1 --retry-connrefused -sf http://localhost:8080/healthz
+          docker stop fonto-docs-smoke
+
   deploy-gcp:
     name: Deploy to Cloud Run
-    needs: test
+    needs: [test, docker-smoke]
     runs-on: ubuntu-latest
     permissions:
       contents: read
