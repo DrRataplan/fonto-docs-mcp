@@ -8,20 +8,11 @@ const {
 } = fontoxpath;
 
 const BASE = "https://documentation.fontoxml.com";
-const SITEMAP_URL = `${BASE}/sitemap.xml`;
 const HEADERS = {
   "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
   "Referer": BASE + "/",
   "Accept": "application/xml,text/xml,*/*",
 };
-
-function titleFromSlug(slug) {
-  const withoutId = slug.replace(/-[0-9a-f]{12}$/, "");
-  return withoutId
-    .split("-")
-    .map(w => w.charAt(0).toUpperCase() + w.slice(1))
-    .join(" ");
-}
 
 // Shorthand helpers — always called with an element as context
 const str  = (expr, node) => evaluateXPathToString(expr, node);
@@ -211,32 +202,22 @@ export function xmlToMarkdown(xml, slug) {
 }
 
 // ---------------------------------------------------------------------------
-// Index from sitemap
+// Search via Fonto search API
 // ---------------------------------------------------------------------------
 
-let indexCache = null;
+const SEARCH_API = `${BASE}/api/search/latest`;
 
 export async function searchDocs(query) {
-  if (!indexCache) indexCache = await buildIndex();
-  const q = query.toLowerCase();
-  return indexCache.filter(r =>
-    r.title.toLowerCase().includes(q) ||
-    r.slug.toLowerCase().includes(q)
-  );
-}
-
-async function buildIndex() {
-  const res = await fetch(SITEMAP_URL, { headers: HEADERS });
-  if (!res.ok) throw new Error(`Failed to fetch sitemap: ${res.status}`);
-  const doc = parseXmlDocument(await res.text());
-
-  return evaluateXPathToStrings("//*[local-name()='loc']", doc)
-    .flatMap(loc => {
-      const match = loc.match(/\/latest\/(.+)$/);
-      if (!match) return [];
-      const slug = match[1];
-      return [{ title: titleFromSlug(slug), url: loc, slug }];
-    });
+  const url = `${SEARCH_API}?q=${encodeURIComponent(query)}`;
+  const res = await fetch(url, { headers: HEADERS });
+  if (!res.ok) throw new Error(`Search failed: ${res.status}`);
+  const data = await res.json();
+  return (data.results || []).map(r => ({
+    title: r.title,
+    slug: r.pagePath,
+    url: `${BASE}/latest/${r.pagePath}`,
+    description: r.snippet || "",
+  }));
 }
 
 // ---------------------------------------------------------------------------
