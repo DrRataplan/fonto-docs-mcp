@@ -1,6 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { xmlToMarkdown } from "./fonto.js";
+import { handleMcpRequest, MCP_TOOLS, MCP_RESOURCES } from "./mcp.js";
 
 const BASE = "https://documentation.fontoxml.com";
 
@@ -221,4 +222,31 @@ test("DITA topic: missing title falls back to slug", () => {
   const xml = `<topic id="t1"><body/></topic>`;
   const md = xmlToMarkdown(xml, "guide/some-page");
   assert.match(md, /^# guide\/some-page/);
+});
+
+// ---------------------------------------------------------------------------
+// mcp.js exports
+// ---------------------------------------------------------------------------
+
+test("mcp.js exports MCP_TOOLS as a non-empty array", () => {
+  assert.ok(Array.isArray(MCP_TOOLS));
+  assert.ok(MCP_TOOLS.length > 0);
+  for (const tool of MCP_TOOLS) {
+    assert.ok(tool.name, "each tool has a name");
+    assert.ok(tool.description, "each tool has a description");
+    assert.ok(tool.inputSchema, "each tool has an inputSchema");
+  }
+});
+
+test("mcp.js exports MCP_RESOURCES as a non-empty array", () => {
+  assert.ok(Array.isArray(MCP_RESOURCES));
+  assert.ok(MCP_RESOURCES.length > 0);
+  for (const resource of MCP_RESOURCES) {
+    assert.ok(resource.uri, "each resource has a uri");
+    assert.ok(resource.name, "each resource has a name");
+  }
+});
+
+test("mcp.js exports handleMcpRequest as a function", () => {
+  assert.strictEqual(typeof handleMcpRequest, "function");
 });
