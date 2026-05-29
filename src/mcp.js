@@ -72,7 +72,10 @@ export async function handleMcpRequest(body) {
         const results = await listPages(args.keyword);
         text = results.length === 0
           ? `No pages found matching "${args.keyword}".`
-          : results.map(r => `${r.slug} — ${r.title}`).join("\n");
+          : results.map(r => {
+              const path = [...r.ancestry, r.title].join(" > ");
+              return `${r.slug} — ${path}`;
+            }).join("\n");
       } else {
         throw new Error(`Unknown tool: ${name}`);
       }
@@ -93,7 +96,10 @@ export async function handleMcpRequest(body) {
     }
     try {
       const catalog = await getCatalog();
-      const text = catalog.map(p => `${p.slug} — ${p.title}`).join("\n");
+      const text = catalog.map(p => {
+        const path = [...p.ancestry, p.title].join(" > ");
+        return `${p.slug} — ${path}`;
+      }).join("\n");
       return {
         jsonrpc: "2.0", id,
         result: { contents: [{ uri, mimeType: "text/plain", text }] },

@@ -203,31 +203,24 @@ export function xmlToMarkdown(xml, slug) {
 }
 
 // ---------------------------------------------------------------------------
-// Page catalog (from sitemap)
+// Page catalog (from search index)
 // ---------------------------------------------------------------------------
 
-const SITEMAP_URL = `${BASE}/sitemap.xml`;
 let catalogCache = null;
 
-function titleFromSlug(slug) {
-  return slug
-    .replace(/-[0-9a-f]{12}$/, "")
-    .split("-")
-    .map(w => w.charAt(0).toUpperCase() + w.slice(1))
-    .join(" ");
-}
-
 async function buildCatalog() {
-  const res = await fetch(SITEMAP_URL, { headers: HEADERS });
-  if (!res.ok) throw new Error(`Failed to fetch sitemap: ${res.status}`);
-  const doc = parseXmlDocument(await res.text());
-  return evaluateXPathToStrings("//*[local-name()='loc']", doc)
-    .flatMap(loc => {
-      const match = loc.match(/\/latest\/(.+)$/);
-      if (!match) return [];
-      const slug = match[1];
-      return [{ slug, title: titleFromSlug(slug), url: loc }];
-    });
+  const res = await fetch(`${BASE}/api/search/latest?q=&all=true`, { headers: HEADERS });
+  if (!res.ok) throw new Error(`Failed to fetch catalog: ${res.status}`);
+  const data = await res.json();
+  return (data.results || [])
+    .filter(r => r.pagePath)
+    .map(r => ({
+      slug: r.pagePath,
+      title: r.navtitle || r.title,
+      url: `${BASE}/latest/${r.pagePath}`,
+      product: r.product,
+      ancestry: r.ancestry || [],
+    }));
 }
 
 export async function getCatalog() {
@@ -237,9 +230,13 @@ export async function getCatalog() {
 
 export async function listPages(keyword) {
   const catalog = await getCatalog();
-  if (!keyword) return catalog;
   const q = keyword.toLowerCase();
-  return catalog.filter(p => p.title.toLowerCase().includes(q) || p.slug.toLowerCase().includes(q));
+  return catalog.filter(p =>
+    p.title.toLowerCase().includes(q) ||
+    p.slug.toLowerCase().includes(q) ||
+    p.product?.toLowerCase().includes(q) ||
+    p.ancestry.some(a => a.toLowerCase().includes(q))
+  );
 }
 
 // ---------------------------------------------------------------------------
