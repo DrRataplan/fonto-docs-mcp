@@ -1,5 +1,5 @@
 import { createServer } from "node:http";
-import { searchDocs, fetchPage } from "./fonto.js";
+import { searchDocs, fetchPage, getCatalog } from "./fonto.js";
 import { handleMcpRequest, MCP_TOOLS, MCP_RESOURCES } from "./mcp.js";
 
 const PORT = process.env.PORT ?? 8080;
@@ -135,6 +135,7 @@ const server = createServer(async (req, res) => {
 
 server.listen(PORT, () => {
   console.log(`fonto-docs-mcp listening on port ${PORT}`);
+  getCatalog().catch(() => {});
 });
 
 function llmsTxt() {
