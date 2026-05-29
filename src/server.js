@@ -169,6 +169,7 @@ const server = createServer(async (req, res) => {
     return res.end();
   }
   if (url.pathname === "/llms.txt")     return text(res, LLMS_TXT);
+  if (url.pathname === "/47ecb075b242427fa657a5e4aee339fd.txt") return text(res, "47ecb075b242427fa657a5e4aee339fd");
   if (url.pathname === "/robots.txt")   return text(res, "User-agent: *\nAllow: /\nSitemap: https://fonto-docs.elliat.nl/sitemap.xml\n");
   if (url.pathname === "/sitemap.xml") {
     res.writeHead(200, { "Content-Type": "application/xml; charset=utf-8" });
