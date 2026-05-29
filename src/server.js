@@ -185,6 +185,9 @@ const server = createServer(async (req, res) => {
         description: "Makes Fonto documentation accessible to AI tools. Fetches the underlying DITA XML and converts it to Markdown on demand — bypassing the JavaScript SPA.",
         homepage: "https://fonto-docs.elliat.nl",
         repository: "https://github.com/DrRataplan/fonto-docs-mcp",
+        relatedProjects: [
+          { name: "xq-lsp", url: "https://github.com/DrRataplan/xq-lsp", description: "Client-side LSP implementation for XQuery — autocomplete and language intelligence for the XQuery side of Fonto development (Fonto uses both TypeScript and XQuery)." },
+        ],
       },
       authentication: { required: false },
       tools: MCP_TOOLS,

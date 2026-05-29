@@ -32,6 +32,10 @@ Or add to mcp.json:
 { "mcpServers": { "fonto-docs": { "type": "http", "url": "https://fonto-docs.elliat.nl/mcp" } } }
 ```
 
+## Related tools
+
+- **[xq-lsp](https://github.com/DrRataplan/xq-lsp)** — Client-side LSP implementation for XQuery. Provides autocomplete and language intelligence for XQuery files used alongside Fonto (Fonto customizations are written in TypeScript and XQuery).
+
 ## Source
 
 https://github.com/DrRataplan/fonto-docs-mcp
