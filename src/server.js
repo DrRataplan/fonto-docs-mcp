@@ -143,6 +143,12 @@ const server = createServer(async (req, res) => {
     });
   }
 
+  // ── Social card image ─────────────────────────────────────────────────
+  if (url.pathname === "/og-image.svg") {
+    res.writeHead(200, { "Content-Type": "image/svg+xml", "Cache-Control": "public, max-age=86400" });
+    return res.end(OG_IMAGE_SVG);
+  }
+
   // ── Favicon ────────────────────────────────────────────────────────────
   if (url.pathname === "/favicon.svg") {
     res.writeHead(200, { "Content-Type": "image/svg+xml", "Cache-Control": "public, max-age=86400" });
@@ -171,6 +177,29 @@ server.listen(PORT, () => {
   console.log(`fonto-docs-mcp listening on port ${PORT}`);
   getCatalog().catch(() => {});
 });
+
+// 1200×630 Open Graph social card
+const OG_IMAGE_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 630" width="1200" height="630">
+  <rect width="1200" height="630" fill="#0f172a"/>
+  <rect x="60" y="60" width="1080" height="510" rx="24" fill="#134e4a"/>
+  <!-- >·< mark, scaled up -->
+  <path d="M160 215 L260 315 L160 415" stroke="#5eead4" stroke-width="18" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M360 215 L260 315 L360 415" stroke="#5eead4" stroke-width="18" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+  <circle cx="310" cy="315" r="16" fill="#5eead4"/>
+  <!-- Title -->
+  <text x="440" y="280" font-family="system-ui, sans-serif" font-size="72" font-weight="700" fill="white">fonto-docs-mcp</text>
+  <!-- Subtitle -->
+  <text x="440" y="355" font-family="system-ui, sans-serif" font-size="36" fill="#5eead4">Fonto documentation for AI tools</text>
+  <!-- URL -->
+  <text x="440" y="430" font-family="system-ui, sans-serif" font-size="28" fill="#94a3b8">fonto-docs.elliat.nl</text>
+  <!-- Tool pills -->
+  <rect x="440" y="460" width="220" height="44" rx="22" fill="#0f766e"/>
+  <text x="550" y="489" font-family="system-ui, sans-serif" font-size="22" fill="white" text-anchor="middle">search_fonto_docs</text>
+  <rect x="674" y="460" width="160" height="44" rx="22" fill="#0f766e"/>
+  <text x="754" y="489" font-family="system-ui, sans-serif" font-size="22" fill="white" text-anchor="middle">get_fonto_page</text>
+  <rect x="848" y="460" width="140" height="44" rx="22" fill="#0f766e"/>
+  <text x="918" y="489" font-family="system-ui, sans-serif" font-size="22" fill="white" text-anchor="middle">list_pages</text>
+</svg>`;
 
 // Two angle-brackets flanking a centre dot on a deep-teal background.
 // Colour chosen to be clearly distinct from Fonto's blue palette.
@@ -244,7 +273,20 @@ function landingPage() {
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Fonto Docs MCP</title>
+<title>Fonto Docs MCP — Fonto documentation for AI tools</title>
+<meta name="description" content="An MCP server that makes Fonto documentation readable by AI tools like Claude, Cursor, and Claude Code. Search, browse, and fetch live docs via MCP or plain HTTP.">
+<link rel="canonical" href="https://fonto-docs.elliat.nl/">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://fonto-docs.elliat.nl/">
+<meta property="og:title" content="Fonto Docs MCP — Fonto documentation for AI tools">
+<meta property="og:description" content="An MCP server that makes Fonto documentation readable by AI tools like Claude, Cursor, and Claude Code. Search, browse, and fetch live docs via MCP or plain HTTP.">
+<meta property="og:image" content="https://fonto-docs.elliat.nl/og-image.svg">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Fonto Docs MCP — Fonto documentation for AI tools">
+<meta name="twitter:description" content="An MCP server that makes Fonto documentation readable by AI tools like Claude, Cursor, and Claude Code.">
+<meta name="twitter:image" content="https://fonto-docs.elliat.nl/og-image.svg">
 <link rel="icon" type="image/svg+xml" href="/favicon.svg">
 <style>
   *, *::before, *::after { box-sizing: border-box; }
