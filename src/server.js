@@ -208,6 +208,22 @@ https://github.com/DrRataplan/fonto-docs-mcp
 }
 
 function landingPage() {
+  const sections = [
+    { name: "Get started", slug: "get-started", pages: 9 },
+    { name: "Configure", slug: "configure", pages: 182 },
+    { name: "Customize", slug: "customize", pages: 24 },
+    { name: "Learn", slug: "learn", pages: 3 },
+    { name: "Integrate", slug: "integrate", pages: 34 },
+    { name: "API reference", slug: "api", pages: 22 },
+    { name: "Add-ons", slug: "add-ons", pages: 30 },
+    { name: "Upgrade", slug: "upgrade", pages: 262 },
+    { name: "FAQ", slug: "faq", pages: 39 },
+    { name: "Generated API docs", slug: "generated-content", pages: 1377 },
+  ];
+  const sectionGrid = sections.map(s =>
+    `<a class="section-card" href="/catalog?section=${s.slug}"><span class="section-name">${s.name}</span><span class="section-count">${s.pages} pages</span></a>`
+  ).join("\n");
+
   return `<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -215,50 +231,67 @@ function landingPage() {
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Fonto Docs MCP</title>
 <style>
-  body { font-family: system-ui, sans-serif; max-width: 720px; margin: 60px auto; padding: 0 24px; color: #1a1a1a; }
-  h1 { font-size: 1.8rem; }
-  code, pre { background: #f4f4f4; border-radius: 6px; padding: 2px 6px; font-size: 0.9em; }
-  pre { padding: 16px; overflow-x: auto; }
-  a { color: #0066cc; }
-  .endpoint { margin: 24px 0; }
-  .label { display: inline-block; background: #e8f0fe; color: #1a56db; border-radius: 4px; padding: 2px 8px; font-size: 0.8em; font-weight: bold; margin-right: 8px; }
+  *, *::before, *::after { box-sizing: border-box; }
+  body { font-family: system-ui, sans-serif; max-width: 800px; margin: 0 auto; padding: 48px 24px 80px; color: #1a1a1a; line-height: 1.6; }
+  h1 { font-size: 2rem; margin-bottom: 0.25em; }
+  h2 { font-size: 1.2rem; margin-top: 2em; border-bottom: 1px solid #e5e5e5; padding-bottom: 0.4em; }
+  p { margin: 0.6em 0 1em; color: #444; }
+  code { background: #f4f4f4; border-radius: 5px; padding: 2px 6px; font-size: 0.88em; }
+  pre { background: #f4f4f4; border-radius: 8px; padding: 16px; overflow-x: auto; font-size: 0.88em; }
+  a { color: #0055cc; }
+  .badge { display: inline-block; background: #e8f0fe; color: #1a56db; border-radius: 4px; padding: 2px 8px; font-size: 0.75em; font-weight: 700; margin-right: 6px; vertical-align: middle; }
+  .tools { display: grid; gap: 12px; margin: 1em 0; }
+  .tool { background: #fafafa; border: 1px solid #e5e5e5; border-radius: 8px; padding: 14px 16px; }
+  .tool code { font-size: 0.95em; font-weight: 600; }
+  .tool p { margin: 4px 0 0; font-size: 0.9em; color: #555; }
+  .sections { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 10px; margin: 1em 0; }
+  .section-card { display: flex; flex-direction: column; background: #fafafa; border: 1px solid #e5e5e5; border-radius: 8px; padding: 12px 14px; text-decoration: none; color: inherit; transition: border-color 0.15s; }
+  .section-card:hover { border-color: #0055cc; }
+  .section-name { font-weight: 600; font-size: 0.9em; }
+  .section-count { font-size: 0.8em; color: #888; margin-top: 2px; }
+  .endpoint { display: flex; align-items: baseline; gap: 10px; margin: 10px 0; }
+  .endpoint code { font-size: 0.9em; }
+  .endpoint span { font-size: 0.8em; color: #666; }
 </style>
 </head>
 <body>
-<h1>Fonto Docs MCP</h1>
-<p>An MCP server and HTTP API that makes <a href="https://documentation.fontoxml.com/">Fonto XML documentation</a> accessible to AI tools like Cursor, Claude, and Claude Code.</p>
 
-<h2>MCP setup</h2>
-<p>Add to your <code>mcp.json</code> (Cursor) or Claude Desktop config:</p>
+<h1>Fonto Docs MCP</h1>
+<p>An MCP server and HTTP API that makes <a href="https://documentation.fontoxml.com/">Fonto XML documentation</a> readable by AI tools. The docs are a JavaScript SPA — this server fetches the underlying XML and converts it to clean Markdown on demand.</p>
+
+<h2>Connect your AI tool</h2>
+<p><strong>Claude Code:</strong></p>
+<pre>claude mcp add --transport http fonto-docs https://fonto-docs.elliat.nl/mcp</pre>
+<p><strong>Cursor / Claude Desktop</strong> — add to <code>mcp.json</code>:</p>
 <pre>{
   "mcpServers": {
-    "fonto-docs": {
-      "type": "http",
-      "url": "https://fonto-docs.elliat.nl/mcp"
-    }
+    "fonto-docs": { "type": "http", "url": "https://fonto-docs.elliat.nl/mcp" }
   }
 }</pre>
 
-<p>Or with Claude Code:</p>
-<pre>claude mcp add --transport http fonto-docs https://fonto-docs.elliat.nl/mcp</pre>
+<h2>MCP tools &amp; resources</h2>
+<div class="tools">
+  <div class="tool"><code>search_fonto_docs(query)</code><p>Search by keyword — returns matching pages with titles, descriptions, and slugs.</p></div>
+  <div class="tool"><code>get_fonto_page(slug)</code><p>Fetch the full Markdown content of a page by its slug.</p></div>
+  <div class="tool"><code>list_pages(keyword)</code><p>List pages matching a keyword, with full section breadcrumbs — great for discovery.</p></div>
+  <div class="tool"><code>fonto://catalog</code> &amp; <code>fonto://page/{slug}</code><p>MCP resources: browse the full catalog or address any page directly.</p></div>
+</div>
 
+<h2>Documentation sections</h2>
+<p>Browse the full catalog filtered by section:</p>
+<div class="sections">
+${sectionGrid}
+</div>
 
 <h2>HTTP API</h2>
-
-<div class="endpoint">
-  <span class="label">GET</span><code>/search?q={query}</code>
-  <p>Search documentation pages by keyword.</p>
-  <p>Example: <a href="/search?q=documentsManager">/search?q=documentsManager</a></p>
-</div>
-
-<div class="endpoint">
-  <span class="label">GET</span><code>/page/{slug}</code>
-  <p>Fetch a page as Markdown by slug.</p>
-  <p>Example: <a href="/page/documentsmanager-f746b3a48442">/page/documentsmanager-f746b3a48442</a></p>
-</div>
+<div class="endpoint"><span class="badge">GET</span><code>/search?q={query}</code><span>Search pages — returns JSON</span></div>
+<div class="endpoint"><span class="badge">GET</span><code>/page/{slug}</code><span>Fetch a page as Markdown — <a href="/page/documentsmanager-f746b3a48442">example</a></span></div>
+<div class="endpoint"><span class="badge">GET</span><code>/catalog</code><span>Full page hierarchy as Markdown — <a href="/catalog">browse</a> or <a href="/catalog?section=configure">filter by section</a></span></div>
+<div class="endpoint"><span class="badge">GET</span><code>/search?q={query}</code><span><a href="/search?q=documentsManager">example</a></span></div>
 
 <h2>Source</h2>
-<p><a href="https://github.com/DrRataplan/fonto-docs-mcp">github.com/DrRataplan/fonto-docs-mcp</a></p>
+<p><a href="https://github.com/DrRataplan/fonto-docs-mcp">github.com/DrRataplan/fonto-docs-mcp</a> — MIT license</p>
+
 </body>
 </html>`;
 }
