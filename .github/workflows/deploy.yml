@@ -89,8 +89,7 @@ jobs:
             -H "Content-Type: application/json" \
             -d '{
               "displayName": "Fonto Docs MCP",
-              "description": "Makes Fonto documentation accessible to AI tools. Fetches the underlying DITA XML and converts it to Markdown on demand — bypassing the JavaScript SPA.",
-              "iconUrl": "https://fonto-docs.elliat.nl/favicon.svg"
+              "description": "Makes Fonto documentation accessible to AI tools. Fetches the underlying DITA XML and converts it to Markdown on demand — bypassing the JavaScript SPA."
             }'
 
   release-npm:
