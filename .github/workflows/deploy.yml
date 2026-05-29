@@ -84,7 +84,7 @@ jobs:
     steps:
       - name: PATCH server metadata
         run: |
-          curl -sf -X PATCH https://api.smithery.ai/servers/martinmiddel/fonto-docs \
+          curl --fail-with-body -s -X PATCH https://api.smithery.ai/servers/martinmiddel%2Ffonto-docs \
             -H "Authorization: Bearer ${{ secrets.SMITHERY_API_KEY }}" \
             -H "Content-Type: application/json" \
             -d '{
