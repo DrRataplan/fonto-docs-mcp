@@ -1,10 +1,10 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 630" width="1200" height="630">
   <rect width="1200" height="630" fill="#0f172a"/>
   <rect x="60" y="60" width="1080" height="510" rx="24" fill="#134e4a"/>
-  <!-- >·< mark, scaled up -->
-  <path d="M160 215 L260 315 L160 415" stroke="#5eead4" stroke-width="18" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
-  <path d="M360 215 L260 315 L360 415" stroke="#5eead4" stroke-width="18" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
-  <circle cx="310" cy="315" r="16" fill="#5eead4"/>
+  <!-- >·< mark, scaled up — tips separated with dot centred between them, matching favicon proportions -->
+  <path d="M160 252 L215 315 L160 379" stroke="#5eead4" stroke-width="18" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M360 252 L306 315 L360 379" stroke="#5eead4" stroke-width="18" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+  <circle cx="260" cy="315" r="23" fill="#5eead4"/>
   <!-- Title -->
   <text x="440" y="280" font-family="system-ui, sans-serif" font-size="72" font-weight="700" fill="white">fonto-docs-mcp</text>
   <!-- Subtitle -->

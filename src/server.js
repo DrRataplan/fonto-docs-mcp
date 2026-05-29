@@ -13,6 +13,9 @@ const OG_IMAGE_SVG    = readFileSync(join(STATIC, "og-image.svg"), "utf8");
 const LLMS_TXT        = readFileSync(join(STATIC, "llms.txt"), "utf8");
 const INDEX_HTML      = readFileSync(join(STATIC, "index.html"), "utf8");
 
+let OG_IMAGE_PNG = null;
+try { OG_IMAGE_PNG = readFileSync(join(STATIC, "og-image.png")); } catch {}
+
 const SECTIONS = [
   { name: "Get started",       slug: "get-started",       pages: 9    },
   { name: "Configure",         slug: "configure",          pages: 182  },
@@ -157,6 +160,14 @@ const server = createServer(async (req, res) => {
   // ── Static assets ──────────────────────────────────────────────────────
   if (url.pathname === "/favicon.svg")  return svg(res, FAVICON_SVG);
   if (url.pathname === "/og-image.svg") return svg(res, OG_IMAGE_SVG);
+  if (url.pathname === "/og-image.png") {
+    if (OG_IMAGE_PNG) {
+      res.writeHead(200, { "Content-Type": "image/png", "Cache-Control": "public, max-age=86400" });
+      return res.end(OG_IMAGE_PNG);
+    }
+    res.writeHead(302, { "Location": "/og-image.svg" });
+    return res.end();
+  }
   if (url.pathname === "/llms.txt")     return text(res, LLMS_TXT);
 
   // ── Smithery / MCP server card ────────────────────────────────────────
