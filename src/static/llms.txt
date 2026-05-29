@@ -1,0 +1,37 @@
+# Fonto Docs MCP
+
+> An MCP server and HTTP API that makes the Fonto documentation accessible to AI tools. The Fonto docs site is a JavaScript SPA — this server fetches the underlying XML and converts it to clean Markdown on demand.
+
+## MCP tools
+
+Connect to this server at https://fonto-docs.elliat.nl/mcp (HTTP transport, no authentication required).
+
+- **search_fonto_docs(query)** — Search the Fonto documentation by keyword. Returns matching pages with titles, descriptions, and slugs.
+- **get_fonto_page(slug)** — Fetch the full content of a Fonto documentation page by its slug. Use search_fonto_docs first to find the right slug.
+- **list_pages(keyword)** — List all pages matching a keyword, filtered across title, product section, and full ancestry hierarchy. Returns slug and breadcrumb path for each match.
+
+## MCP resources
+
+- **fonto://catalog** — All ~2000 Fonto documentation pages with real titles, product grouping, and full ancestry paths (e.g. "Configure > Tables > CALS tables"). Fetched once on first use and cached.
+- **fonto://page/{slug}** (resource template) — Address any documentation page directly as a resource by its slug.
+
+## HTTP API
+
+- GET /search?q={query} — Search documentation pages. Returns JSON array of {title, slug, url, description}.
+- GET /page/{slug} — Fetch a page as Markdown. Example: /page/documentsmanager-f746b3a48442
+- GET /catalog — Full page catalog as Markdown, grouped by section. Add ?section={keyword} to filter.
+
+## MCP setup
+
+```bash
+claude mcp add --transport http fonto-docs https://fonto-docs.elliat.nl/mcp
+```
+
+Or add to mcp.json:
+```json
+{ "mcpServers": { "fonto-docs": { "type": "http", "url": "https://fonto-docs.elliat.nl/mcp" } } }
+```
+
+## Source
+
+https://github.com/DrRataplan/fonto-docs-mcp
