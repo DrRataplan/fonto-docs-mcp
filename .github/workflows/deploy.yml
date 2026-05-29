@@ -1,29 +1,19 @@
-name: Deploy to Cloud Run
+name: Deploy
 
 on:
   push:
     branches: [main]
 
 jobs:
-  deploy:
+  deploy-gcp:
+    name: Deploy to Cloud Run + Smithery
     runs-on: ubuntu-latest
     permissions:
-      contents: write        # semantic-release: push tags and create releases
-      issues: write          # semantic-release: comment on issues
-      pull-requests: write   # semantic-release: comment on PRs
-      id-token: write        # OIDC: GCP Workload Identity + npm token exchange
+      contents: read
+      id-token: write  # GCP Workload Identity Federation
 
     steps:
       - uses: actions/checkout@v6
-        with:
-          fetch-depth: 0  # semantic-release needs full git history
-
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 20
-          registry-url: https://registry.npmjs.org
-
-      - run: npm ci
 
       - name: Authenticate to Google Cloud
         uses: google-github-actions/auth@v3
@@ -52,6 +42,41 @@ jobs:
             --project=fonto-docs-mcp \
             --quiet
 
+      - name: Notify Smithery
+        run: |
+          curl -s -X PATCH https://api.smithery.ai/servers/martinmiddel/fonto-docs \
+            -H "Authorization: Bearer ${{ secrets.SMITHERY_API_KEY }}" \
+            -H "Content-Type: application/json" \
+            -d '{
+              "displayName": "Fonto Docs MCP",
+              "description": "Makes Fonto documentation accessible to AI tools. Fetches the underlying DITA XML and converts it to Markdown on demand — bypassing the JavaScript SPA.",
+              "homepage": "https://fonto-docs.elliat.nl",
+              "repositoryUrl": "https://github.com/DrRataplan/fonto-docs-mcp",
+              "iconUrl": "https://fonto-docs.elliat.nl/favicon.svg",
+              "license": "MIT"
+            }'
+
+  release-npm:
+    name: Release to npm
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write        # semantic-release: push tags and create releases
+      issues: write          # semantic-release: comment on issues
+      pull-requests: write   # semantic-release: comment on PRs
+      id-token: write        # npm OIDC token exchange
+
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0  # semantic-release needs full git history
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          registry-url: https://registry.npmjs.org
+
+      - run: npm ci
+
       - name: Obtain short-lived npm token via OIDC
         run: |
           OIDC_TOKEN=$(curl -fsSL \
@@ -70,17 +95,3 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           NPM_CONFIG_PROVENANCE: "true"
-
-      - name: Notify Smithery
-        run: |
-          curl -s -X PATCH https://api.smithery.ai/servers/martinmiddel/fonto-docs \
-            -H "Authorization: Bearer ${{ secrets.SMITHERY_API_KEY }}" \
-            -H "Content-Type: application/json" \
-            -d '{
-              "displayName": "Fonto Docs MCP",
-              "description": "Makes Fonto documentation accessible to AI tools. Fetches the underlying DITA XML and converts it to Markdown on demand — bypassing the JavaScript SPA.",
-              "homepage": "https://fonto-docs.elliat.nl",
-              "repositoryUrl": "https://github.com/DrRataplan/fonto-docs-mcp",
-              "iconUrl": "https://fonto-docs.elliat.nl/favicon.svg",
-              "license": "MIT"
-            }'
