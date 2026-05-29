@@ -35,3 +35,21 @@ Page content (`get_fonto_page`) is never cached — every call fetches live from
 ## Deployment
 
 Deployed to Google Cloud Run via `.github/workflows/deploy.yml` using Workload Identity Federation (no stored service account keys). The live server is at `https://fonto-docs.elliat.nl/`.
+
+Every push to `main` triggers three parallel pipelines after the test gate:
+1. **deploy-gcp** — builds a Docker image, pushes to Artifact Registry, deploys to Cloud Run
+2. **notify-smithery** — PATCHes the Smithery listing after deploy-gcp succeeds
+3. **release-npm** — runs semantic-release, publishes to npm via OIDC (no stored token)
+
+## Commit conventions
+
+This repo uses [Conventional Commits](https://www.conventionalcommits.org/). semantic-release reads commit messages to decide whether to cut a new npm release:
+
+| Prefix | npm release |
+|---|---|
+| `feat:` | minor (0.x.0) |
+| `fix:`, `perf:`, `revert:` | patch (0.0.x) |
+| `feat!:` or `BREAKING CHANGE:` in body | major (x.0.0) |
+| `chore:`, `ci:`, `docs:`, `refactor:`, `style:`, `test:` | **none** |
+
+Use `chore:` or `ci:` for housekeeping commits that should not trigger a release.
