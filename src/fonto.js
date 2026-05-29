@@ -19,6 +19,41 @@ const str  = (expr, node) => evaluateXPathToString(expr, node);
 const strs = (expr, node) => evaluateXPathToStrings(expr, node);
 const nodes = (expr, node) => evaluateXPathToNodes(expr, node);
 
+function renderInline(node) {
+  let result = "";
+  for (const child of nodes("node()", node)) {
+    if (child.nodeType === 3) {
+      result += child.nodeValue || "";
+    } else if (child.localName === "codeph" || child.localName === "filepath" || child.localName === "varname") {
+      result += `\`${str(".", child)}\``;
+    } else {
+      result += str(".", child);
+    }
+  }
+  return result.trim();
+}
+
+function renderStentry(entry) {
+  const paras = nodes("p", entry);
+  if (paras.length) return paras.map(p => renderInline(p)).join(" ").trim();
+  return renderInline(entry);
+}
+
+function renderSimpletable(table, lines) {
+  const headerEntries = nodes("sthead/stentry", table);
+  const dataRows = nodes("strow", table);
+  if (!headerEntries.length && !dataRows.length) return;
+  if (headerEntries.length) {
+    lines.push("| " + headerEntries.map(renderStentry).join(" | ") + " |");
+    lines.push("| " + headerEntries.map(() => "---").join(" | ") + " |");
+  }
+  for (const row of dataRows) {
+    const entries = nodes("stentry", row);
+    lines.push("| " + entries.map(renderStentry).join(" | ") + " |");
+  }
+  lines.push("");
+}
+
 function renderDescriptionInto(descNode, lines) {
   for (const child of nodes("paragraph | list", descNode)) {
     if (child.localName === "paragraph") {
@@ -144,6 +179,7 @@ function renderDitaPage(root, slug) {
         const cmd = str("cmd | .", step);
         if (cmd.trim()) lines.push(`1. ${cmd.trim()}`);
       }
+      for (const table of nodes("simpletable", section)) renderSimpletable(table, lines);
     }
 
     // Steps at body level (task pages)
@@ -160,6 +196,9 @@ function renderDitaPage(root, slug) {
 
     // Top-level paragraphs
     for (const p of strs("p", body)) { lines.push(p.trim()); lines.push(""); }
+
+    // Top-level simpletables
+    for (const table of nodes("simpletable", body)) renderSimpletable(table, lines);
 
     // Nav panels (div > fig with title + shortdesc)
     const figs = nodes(".//fig[title]", body);

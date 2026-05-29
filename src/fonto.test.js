@@ -218,6 +218,58 @@ test("DITA topic: code examples section", () => {
   assert.match(md, /```\nimport fontoXml from 'fonto';\n```/);
 });
 
+test("DITA topic: simpletable rendered as Markdown table with inline codeph", () => {
+  const xml = `<topic id="t1">
+    <title>Files</title>
+    <body>
+      <simpletable>
+        <sthead>
+          <stentry><p>Name</p></stentry>
+          <stentry><p>Purpose</p></stentry>
+        </sthead>
+        <strow>
+          <stentry><p><codeph>config/</codeph></p></stentry>
+          <stentry><p>Configuration directory.</p></stentry>
+        </strow>
+        <strow>
+          <stentry><p><codeph>src/</codeph></p></stentry>
+          <stentry><p>Source files.</p></stentry>
+        </strow>
+      </simpletable>
+    </body>
+  </topic>`;
+  const md = xmlToMarkdown(xml, "guide/files");
+  assert.match(md, /\| Name \| Purpose \|/);
+  assert.match(md, /\| --- \| --- \|/);
+  assert.match(md, /\| `config\/` \| Configuration directory\. \|/);
+  assert.match(md, /\| `src\/` \| Source files\. \|/);
+});
+
+test("DITA reference: simpletable inside section", () => {
+  const xml = `<reference id="r1">
+    <title>Config</title>
+    <refbody>
+      <section>
+        <title>Options</title>
+        <simpletable>
+          <sthead>
+            <stentry><p>Key</p></stentry>
+            <stentry><p>Type</p></stentry>
+          </sthead>
+          <strow>
+            <stentry><p>apiKey</p></stentry>
+            <stentry><p>string</p></stentry>
+          </strow>
+        </simpletable>
+      </section>
+    </refbody>
+  </reference>`;
+  const md = xmlToMarkdown(xml, "ref/config");
+  assert.match(md, /\| Key \| Type \|/);
+  assert.match(md, /\| --- \| --- \|/);
+  assert.match(md, /\| apiKey \| string \|/);
+});
+
 test("DITA topic: missing title falls back to slug", () => {
   const xml = `<topic id="t1"><body/></topic>`;
   const md = xmlToMarkdown(xml, "guide/some-page");
