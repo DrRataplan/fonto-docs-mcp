@@ -1,6 +1,6 @@
 import { createServer } from "node:http";
 import { searchDocs, fetchPage, getCatalog, listPages } from "./fonto.js";
-import { handleMcpRequest, MCP_TOOLS, MCP_RESOURCES } from "./mcp.js";
+import { handleMcpRequest, MCP_TOOLS, MCP_RESOURCES, MCP_RESOURCE_TEMPLATES } from "./mcp.js";
 
 const PORT = process.env.PORT ?? 8080;
 
@@ -138,6 +138,7 @@ const server = createServer(async (req, res) => {
       authentication: { required: false },
       tools: MCP_TOOLS,
       resources: MCP_RESOURCES,
+      resourceTemplates: MCP_RESOURCE_TEMPLATES,
       prompts: [],
     });
   }
@@ -181,6 +182,7 @@ Connect to this server at https://fonto-docs.elliat.nl/mcp (HTTP transport, no a
 ## MCP resources
 
 - **fonto://catalog** — All ~2000 Fonto documentation pages with real titles, product grouping, and full ancestry paths (e.g. "Configure > Tables > CALS tables"). Fetched once on first use and cached.
+- **fonto://page/{slug}** (resource template) — Address any documentation page directly as a resource by its slug.
 
 ## HTTP API
 

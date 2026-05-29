@@ -39,6 +39,15 @@ export const MCP_RESOURCES = [
   },
 ];
 
+export const MCP_RESOURCE_TEMPLATES = [
+  {
+    uriTemplate: "fonto://page/{slug}",
+    name: "Fonto Documentation Page",
+    description: "Fetch any Fonto documentation page by slug. Use search_fonto_docs or list_pages to find the slug, then address the page directly as a resource.",
+    mimeType: "text/plain",
+  },
+];
+
 export async function handleMcpRequest(body) {
   const { method, params, id } = body;
 
@@ -47,7 +56,7 @@ export async function handleMcpRequest(body) {
       jsonrpc: "2.0", id,
       result: {
         protocolVersion: "2024-11-05",
-        capabilities: { tools: {}, resources: {} },
+        capabilities: { tools: {}, resources: { subscribe: false } },
         serverInfo: { name: "fonto-docs", version: "0.1.0" },
       },
     };
@@ -86,24 +95,26 @@ export async function handleMcpRequest(body) {
   }
 
   if (method === "resources/list") {
-    return { jsonrpc: "2.0", id, result: { resources: MCP_RESOURCES } };
+    return { jsonrpc: "2.0", id, result: { resources: MCP_RESOURCES, resourceTemplates: MCP_RESOURCE_TEMPLATES } };
   }
 
   if (method === "resources/read") {
     const { uri } = params;
-    if (uri !== "fonto://catalog") {
-      return { jsonrpc: "2.0", id, error: { code: -32602, message: `Unknown resource: ${uri}` } };
-    }
     try {
-      const catalog = await getCatalog();
-      const text = catalog.map(p => {
-        const path = [...p.ancestry, p.title].join(" > ");
-        return `${p.slug} — ${path}`;
-      }).join("\n");
-      return {
-        jsonrpc: "2.0", id,
-        result: { contents: [{ uri, mimeType: "text/plain", text }] },
-      };
+      if (uri === "fonto://catalog") {
+        const catalog = await getCatalog();
+        const text = catalog.map(p => {
+          const path = [...p.ancestry, p.title].join(" > ");
+          return `${p.slug} — ${path}`;
+        }).join("\n");
+        return { jsonrpc: "2.0", id, result: { contents: [{ uri, mimeType: "text/plain", text }] } };
+      }
+      const pageMatch = uri.match(/^fonto:\/\/page\/(.+)$/);
+      if (pageMatch) {
+        const text = await fetchPage(pageMatch[1]);
+        return { jsonrpc: "2.0", id, result: { contents: [{ uri, mimeType: "text/plain", text }] } };
+      }
+      return { jsonrpc: "2.0", id, error: { code: -32602, message: `Unknown resource: ${uri}` } };
     } catch (err) {
       return { jsonrpc: "2.0", id, error: { code: -32603, message: err.message } };
     }

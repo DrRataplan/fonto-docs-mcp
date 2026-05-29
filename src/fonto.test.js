@@ -1,7 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { xmlToMarkdown } from "./fonto.js";
-import { handleMcpRequest, MCP_TOOLS, MCP_RESOURCES } from "./mcp.js";
+import { handleMcpRequest, MCP_TOOLS, MCP_RESOURCES, MCP_RESOURCE_TEMPLATES } from "./mcp.js";
 
 const BASE = "https://documentation.fontoxml.com";
 
@@ -244,6 +244,15 @@ test("mcp.js exports MCP_RESOURCES as a non-empty array", () => {
   for (const resource of MCP_RESOURCES) {
     assert.ok(resource.uri, "each resource has a uri");
     assert.ok(resource.name, "each resource has a name");
+  }
+});
+
+test("mcp.js exports MCP_RESOURCE_TEMPLATES as a non-empty array", () => {
+  assert.ok(Array.isArray(MCP_RESOURCE_TEMPLATES));
+  assert.ok(MCP_RESOURCE_TEMPLATES.length > 0);
+  for (const tpl of MCP_RESOURCE_TEMPLATES) {
+    assert.ok(tpl.uriTemplate, "each template has a uriTemplate");
+    assert.ok(tpl.name, "each template has a name");
   }
 });
 
