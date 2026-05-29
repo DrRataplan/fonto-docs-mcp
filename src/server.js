@@ -143,6 +143,12 @@ const server = createServer(async (req, res) => {
     });
   }
 
+  // ── Favicon ────────────────────────────────────────────────────────────
+  if (url.pathname === "/favicon.svg") {
+    res.writeHead(200, { "Content-Type": "image/svg+xml", "Cache-Control": "public, max-age=86400" });
+    return res.end(FAVICON_SVG);
+  }
+
   // ── llms.txt ───────────────────────────────────────────────────────────
   if (url.pathname === "/llms.txt") {
     return text(res, llmsTxt());
@@ -165,6 +171,15 @@ server.listen(PORT, () => {
   console.log(`fonto-docs-mcp listening on port ${PORT}`);
   getCatalog().catch(() => {});
 });
+
+// Two angle-brackets flanking a centre dot on a deep-teal background.
+// Colour chosen to be clearly distinct from Fonto's blue palette.
+const FAVICON_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
+  <rect width="32" height="32" rx="7" fill="#134e4a"/>
+  <path d="M11 9 L5 16 L11 23" stroke="#5eead4" stroke-width="3" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M21 9 L27 16 L21 23" stroke="#5eead4" stroke-width="3" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+  <circle cx="16" cy="16" r="2.5" fill="#5eead4"/>
+</svg>`;
 
 function llmsTxt() {
   return `# Fonto Docs MCP
@@ -230,6 +245,7 @@ function landingPage() {
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Fonto Docs MCP</title>
+<link rel="icon" type="image/svg+xml" href="/favicon.svg">
 <style>
   *, *::before, *::after { box-sizing: border-box; }
   body { font-family: system-ui, sans-serif; max-width: 800px; margin: 0 auto; padding: 48px 24px 80px; color: #1a1a1a; line-height: 1.6; }
