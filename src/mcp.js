@@ -1,4 +1,4 @@
-import { searchDocs, fetchPage } from "./fonto.js";
+import { searchDocs, fetchPage, getCatalog, listPages } from "./fonto.js";
 
 export const MCP_TOOLS = [
   {
@@ -19,6 +19,24 @@ export const MCP_TOOLS = [
       required: ["slug"],
     },
   },
+  {
+    name: "list_pages",
+    description: "List Fonto documentation pages whose titles match a keyword. Useful for discovery when you don't know the exact slug. Returns slug, title, and URL for each match. For a full catalog use the fonto://catalog resource.",
+    inputSchema: {
+      type: "object",
+      properties: { keyword: { type: "string", description: "Word or phrase to filter page titles by, e.g. 'operations' or 'table'" } },
+      required: ["keyword"],
+    },
+  },
+];
+
+const MCP_RESOURCES = [
+  {
+    uri: "fonto://catalog",
+    name: "Fonto Docs Catalog",
+    description: "Complete list of all Fonto documentation pages with slugs and titles. Use this for broad discovery; use search_fonto_docs or list_pages for targeted lookups.",
+    mimeType: "text/plain",
+  },
 ];
 
 export async function handleMcpRequest(body) {
@@ -29,7 +47,7 @@ export async function handleMcpRequest(body) {
       jsonrpc: "2.0", id,
       result: {
         protocolVersion: "2024-11-05",
-        capabilities: { tools: {} },
+        capabilities: { tools: {}, resources: {} },
         serverInfo: { name: "fonto-docs", version: "0.1.0" },
       },
     };
@@ -50,12 +68,38 @@ export async function handleMcpRequest(body) {
           : results.map(r => `**${r.title}**\n${r.description ?? ""}\nURL: ${r.url}\nSlug: ${r.slug}`).join("\n\n---\n\n");
       } else if (name === "get_fonto_page") {
         text = await fetchPage(args.slug);
+      } else if (name === "list_pages") {
+        const results = await listPages(args.keyword);
+        text = results.length === 0
+          ? `No pages found matching "${args.keyword}".`
+          : results.map(r => `${r.slug} — ${r.title}`).join("\n");
       } else {
         throw new Error(`Unknown tool: ${name}`);
       }
       return { jsonrpc: "2.0", id, result: { content: [{ type: "text", text }] } };
     } catch (err) {
       return { jsonrpc: "2.0", id, result: { content: [{ type: "text", text: err.message }], isError: true } };
+    }
+  }
+
+  if (method === "resources/list") {
+    return { jsonrpc: "2.0", id, result: { resources: MCP_RESOURCES } };
+  }
+
+  if (method === "resources/read") {
+    const { uri } = params;
+    if (uri !== "fonto://catalog") {
+      return { jsonrpc: "2.0", id, error: { code: -32602, message: `Unknown resource: ${uri}` } };
+    }
+    try {
+      const catalog = await getCatalog();
+      const text = catalog.map(p => `${p.slug} — ${p.title}`).join("\n");
+      return {
+        jsonrpc: "2.0", id,
+        result: { contents: [{ uri, mimeType: "text/plain", text }] },
+      };
+    } catch (err) {
+      return { jsonrpc: "2.0", id, error: { code: -32603, message: err.message } };
     }
   }
 

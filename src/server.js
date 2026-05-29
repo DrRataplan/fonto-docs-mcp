@@ -148,6 +148,11 @@ Connect to this server at https://fonto-docs.elliat.nl/mcp (HTTP transport, no a
 
 - **search_fonto_docs(query)** — Search the Fonto XML documentation by keyword. Returns matching pages with titles, descriptions, and slugs.
 - **get_fonto_page(slug)** — Fetch the full content of a Fonto documentation page by its slug. Use search_fonto_docs first to find the right slug.
+- **list_pages(keyword)** — List all pages whose titles match a keyword. Useful for discovery when you don't know the exact slug.
+
+## MCP resources
+
+- **fonto://catalog** — Complete list of all ~2000 Fonto documentation pages with slugs and titles. Use for broad discovery.
 
 ## HTTP API
 
