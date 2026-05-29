@@ -76,6 +76,7 @@ The server also exposes a plain HTTP API if you want to use it without MCP:
 
 - `GET /search?q={query}` — search pages by keyword
 - `GET /page/{slug}` — fetch a page as Markdown
+- `GET /catalog` — full page catalog grouped by section; add `?section={keyword}` to filter
 
 ## How it works
 

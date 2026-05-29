@@ -1,5 +1,5 @@
 import { createServer } from "node:http";
-import { searchDocs, fetchPage, getCatalog } from "./fonto.js";
+import { searchDocs, fetchPage, getCatalog, listPages } from "./fonto.js";
 import { handleMcpRequest, MCP_TOOLS, MCP_RESOURCES } from "./mcp.js";
 
 const PORT = process.env.PORT ?? 8080;
@@ -104,6 +104,33 @@ const server = createServer(async (req, res) => {
     }
   }
 
+  // ── Catalog ────────────────────────────────────────────────────────────
+  if (url.pathname === "/catalog") {
+    const section = url.searchParams.get("section");
+    try {
+      logEvent({ type: "http_catalog", section });
+      const pages = section ? await listPages(section) : await getCatalog();
+      const byProduct = {};
+      for (const p of pages) {
+        const key = p.product;
+        if (!byProduct[key]) byProduct[key] = [];
+        byProduct[key].push(p);
+      }
+      const lines = [];
+      for (const [product, entries] of Object.entries(byProduct)) {
+        lines.push(`## ${product}`);
+        for (const p of entries) {
+          const breadcrumb = [...p.ancestry, p.title].join(" > ");
+          lines.push(`- [${breadcrumb}](/page/${p.slug})`);
+        }
+        lines.push("");
+      }
+      return text(res, lines.join("\n"));
+    } catch (err) {
+      return json(res, { error: err.message }, 500);
+    }
+  }
+
   // ── Smithery / MCP server card ────────────────────────────────────────
   if (url.pathname === "/.well-known/mcp/server-card.json") {
     return json(res, {
@@ -159,6 +186,7 @@ Connect to this server at https://fonto-docs.elliat.nl/mcp (HTTP transport, no a
 
 - GET /search?q={query} — Search documentation pages. Returns JSON array of {title, slug, url, description}.
 - GET /page/{slug} — Fetch a page as Markdown. Example: /page/documentsmanager-f746b3a48442
+- GET /catalog — Full page catalog as Markdown, grouped by section. Add ?section={keyword} to filter.
 
 ## MCP setup
 
