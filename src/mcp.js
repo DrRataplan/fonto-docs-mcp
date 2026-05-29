@@ -9,6 +9,32 @@ export const MCP_TOOLS = [
       properties: { query: { type: "string", description: "Search term, e.g. 'documentsManager'" } },
       required: ["query"],
     },
+    outputSchema: {
+      type: "object",
+      properties: {
+        results: {
+          type: "array",
+          items: {
+            type: "object",
+            properties: {
+              title: { type: "string" },
+              description: { type: "string" },
+              url: { type: "string" },
+              slug: { type: "string" },
+            },
+            required: ["title", "slug", "url"],
+          },
+        },
+      },
+      required: ["results"],
+    },
+    annotations: {
+      title: "Search Fonto Documentation",
+      readOnlyHint: true,
+      destructiveHint: false,
+      idempotentHint: true,
+      openWorldHint: true,
+    },
   },
   {
     name: "get_fonto_page",
@@ -18,6 +44,20 @@ export const MCP_TOOLS = [
       properties: { slug: { type: "string", description: "Page slug, e.g. 'documentsmanager-f746b3a48442'" } },
       required: ["slug"],
     },
+    outputSchema: {
+      type: "object",
+      properties: {
+        content: { type: "string", description: "Markdown content of the documentation page" },
+      },
+      required: ["content"],
+    },
+    annotations: {
+      title: "Get Fonto Page",
+      readOnlyHint: true,
+      destructiveHint: false,
+      idempotentHint: true,
+      openWorldHint: true,
+    },
   },
   {
     name: "list_pages",
@@ -26,6 +66,31 @@ export const MCP_TOOLS = [
       type: "object",
       properties: { keyword: { type: "string", description: "Word or phrase to filter page titles by, e.g. 'operations' or 'table'" } },
       required: ["keyword"],
+    },
+    outputSchema: {
+      type: "object",
+      properties: {
+        pages: {
+          type: "array",
+          items: {
+            type: "object",
+            properties: {
+              slug: { type: "string" },
+              title: { type: "string" },
+              ancestry: { type: "array", items: { type: "string" } },
+            },
+            required: ["slug", "title"],
+          },
+        },
+      },
+      required: ["pages"],
+    },
+    annotations: {
+      title: "List Fonto Pages",
+      readOnlyHint: true,
+      destructiveHint: false,
+      idempotentHint: true,
+      openWorldHint: true,
     },
   },
 ];
@@ -55,7 +120,7 @@ export async function handleMcpRequest(body) {
     return {
       jsonrpc: "2.0", id,
       result: {
-        protocolVersion: "2024-11-05",
+        protocolVersion: "2025-03-26",
         capabilities: { tools: {}, resources: { subscribe: false } },
         serverInfo: { name: "fonto-docs", version: "0.1.0" },
       },
@@ -70,25 +135,29 @@ export async function handleMcpRequest(body) {
     const { name, arguments: args } = params;
     try {
       let text;
+      let structuredContent;
       if (name === "search_fonto_docs") {
         const results = await searchDocs(args.query);
+        structuredContent = { results };
         text = results.length === 0
           ? `No results found for "${args.query}".`
           : results.map(r => `**${r.title}**\n${r.description ?? ""}\nURL: ${r.url}\nSlug: ${r.slug}`).join("\n\n---\n\n");
       } else if (name === "get_fonto_page") {
         text = await fetchPage(args.slug);
+        structuredContent = { content: text };
       } else if (name === "list_pages") {
-        const results = await listPages(args.keyword);
-        text = results.length === 0
+        const pages = await listPages(args.keyword);
+        structuredContent = { pages };
+        text = pages.length === 0
           ? `No pages found matching "${args.keyword}".`
-          : results.map(r => {
+          : pages.map(r => {
               const path = [...r.ancestry, r.title].join(" > ");
               return `${r.slug} — ${path}`;
             }).join("\n");
       } else {
         throw new Error(`Unknown tool: ${name}`);
       }
-      return { jsonrpc: "2.0", id, result: { content: [{ type: "text", text }] } };
+      return { jsonrpc: "2.0", id, result: { content: [{ type: "text", text }], structuredContent } };
     } catch (err) {
       return { jsonrpc: "2.0", id, result: { content: [{ type: "text", text: err.message }], isError: true } };
     }
