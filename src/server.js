@@ -1,6 +1,6 @@
 import { createServer } from "node:http";
 import { searchDocs, fetchPage } from "./fonto.js";
-import { handleMcpRequest, MCP_TOOLS } from "./mcp.js";
+import { handleMcpRequest, MCP_TOOLS, MCP_RESOURCES } from "./mcp.js";
 
 const PORT = process.env.PORT ?? 8080;
 
@@ -110,7 +110,7 @@ const server = createServer(async (req, res) => {
       serverInfo: { name: "fonto-docs", version: "0.1.0" },
       authentication: { required: false },
       tools: MCP_TOOLS,
-      resources: [],
+      resources: MCP_RESOURCES,
       prompts: [],
     });
   }
@@ -148,11 +148,11 @@ Connect to this server at https://fonto-docs.elliat.nl/mcp (HTTP transport, no a
 
 - **search_fonto_docs(query)** — Search the Fonto XML documentation by keyword. Returns matching pages with titles, descriptions, and slugs.
 - **get_fonto_page(slug)** — Fetch the full content of a Fonto documentation page by its slug. Use search_fonto_docs first to find the right slug.
-- **list_pages(keyword)** — List all pages whose titles match a keyword. Useful for discovery when you don't know the exact slug.
+- **list_pages(keyword)** — List all pages matching a keyword, filtered across title, product section, and full ancestry hierarchy. Returns slug and breadcrumb path for each match.
 
 ## MCP resources
 
-- **fonto://catalog** — Complete list of all ~2000 Fonto documentation pages with slugs and titles. Use for broad discovery.
+- **fonto://catalog** — All ~2000 Fonto documentation pages with real titles, product grouping, and full ancestry paths (e.g. "Configure > Tables > CALS tables"). Fetched once on first use and cached.
 
 ## HTTP API
 

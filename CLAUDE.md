@@ -28,9 +28,9 @@ Fonto XML has two document shapes:
 
 `xmlToMarkdown(xml, slug)` is the entry point — it dispatches based on root element name.
 
-## No caching
+## Caching
 
-Every request goes live to `documentation.fontoxml.com`. There is no local mirror or cache. This keeps content fresh but means tests that hit the network are slow and fragile — prefer unit tests with fixture XML.
+Page content (`get_fonto_page`) is never cached — every call fetches live from `documentation.fontoxml.com`. The page catalog (`list_pages`, `fonto://catalog`) is fetched once from the Fonto search index on first use and held in the `catalogCache` module variable for the lifetime of the process. Tests that hit the network are slow and fragile — prefer unit tests with fixture XML.
 
 ## Deployment
 

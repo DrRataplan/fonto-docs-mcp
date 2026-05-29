@@ -6,12 +6,17 @@ The Fonto docs are rendered by a JavaScript SPA, which makes them impossible for
 
 ## What is MCP?
 
-MCP (Model Context Protocol) is a standard way to give AI assistants access to external tools. Once you connect this server to your AI tool, it gains two new capabilities:
+MCP (Model Context Protocol) is a standard way to give AI assistants access to external tools. Once you connect this server to your AI tool, it gains access to these tools and resources:
 
 | Tool | What it does |
 |---|---|
 | `search_fonto_docs` | Search by keyword — returns matching pages with titles, descriptions, and slugs |
 | `get_fonto_page` | Fetch the full content of a page by its slug |
+| `list_pages` | List all pages matching a keyword, with full section hierarchy — useful for discovery |
+
+| Resource | What it contains |
+|---|---|
+| `fonto://catalog` | All ~2000 pages with real titles, product grouping, and ancestry paths |
 
 You can then ask things like *"How does addDocumentChangeCallback work?"* and the AI will look it up in the live Fonto docs.
 
@@ -62,6 +67,8 @@ Once connected, ask your AI assistant:
 - *"Search the Fonto docs for documentsManager"*
 - *"Get the Fonto docs page for clearundostackfordocument-f0187fade723"*
 - *"How does addDocumentChangeCallback work according to the Fonto docs?"*
+- *"List all pages in the configure section"*
+- *"What upgrade guides are available?"*
 
 ## HTTP API
 
@@ -72,7 +79,7 @@ The server also exposes a plain HTTP API if you want to use it without MCP:
 
 ## How it works
 
-The Fonto documentation site stores its content as XML at predictable URLs under `/static/xml/`. This server fetches those XML files directly and converts them to Markdown, bypassing the JavaScript rendering. No content is mirrored or cached — every request goes to `documentation.fontoxml.com` in real time.
+The Fonto documentation site stores its content as XML at predictable URLs under `/static/xml/`. This server fetches those XML files directly and converts them to Markdown, bypassing the JavaScript rendering. Page content is never cached — every `get_fonto_page` call goes to `documentation.fontoxml.com` live. The page catalog (used by `list_pages` and `fonto://catalog`) is fetched once from the Fonto search index on first use and held in memory for the lifetime of the process.
 
 ## Self-hosting
 
