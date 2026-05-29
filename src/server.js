@@ -115,6 +115,11 @@ const server = createServer(async (req, res) => {
     });
   }
 
+  // ── llms.txt ───────────────────────────────────────────────────────────
+  if (url.pathname === "/llms.txt") {
+    return text(res, llmsTxt());
+  }
+
   // ── Health check (Cloud Run needs this) ───────────────────────────────
   if (url.pathname === "/healthz") {
     return text(res, "ok");
@@ -131,6 +136,40 @@ const server = createServer(async (req, res) => {
 server.listen(PORT, () => {
   console.log(`fonto-docs-mcp listening on port ${PORT}`);
 });
+
+function llmsTxt() {
+  return `# Fonto Docs MCP
+
+> An MCP server and HTTP API that makes the Fonto XML documentation accessible to AI tools. The Fonto docs site is a JavaScript SPA — this server fetches the underlying XML and converts it to clean Markdown on demand.
+
+## MCP tools
+
+Connect to this server at https://fonto-docs.elliat.nl/mcp (HTTP transport, no authentication required).
+
+- **search_fonto_docs(query)** — Search the Fonto XML documentation by keyword. Returns matching pages with titles, descriptions, and slugs.
+- **get_fonto_page(slug)** — Fetch the full content of a Fonto documentation page by its slug. Use search_fonto_docs first to find the right slug.
+
+## HTTP API
+
+- GET /search?q={query} — Search documentation pages. Returns JSON array of {title, slug, url, description}.
+- GET /page/{slug} — Fetch a page as Markdown. Example: /page/documentsmanager-f746b3a48442
+
+## MCP setup
+
+\`\`\`bash
+claude mcp add --transport http fonto-docs https://fonto-docs.elliat.nl/mcp
+\`\`\`
+
+Or add to mcp.json:
+\`\`\`json
+{ "mcpServers": { "fonto-docs": { "type": "http", "url": "https://fonto-docs.elliat.nl/mcp" } } }
+\`\`\`
+
+## Source
+
+https://github.com/DrRataplan/fonto-docs-mcp
+`;
+}
 
 function landingPage() {
   return `<!DOCTYPE html>
