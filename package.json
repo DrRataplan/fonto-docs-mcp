@@ -1,7 +1,10 @@
 {
   "name": "fonto-docs-mcp",
   "version": "0.1.0",
-  "description": "MCP server for Fonto XML documentation",
+  "description": "MCP server that makes Fonto documentation accessible to AI tools like Claude, Cursor, and Claude Desktop",
+  "keywords": ["mcp", "fonto", "dita", "xml", "documentation", "ai", "claude", "cursor"],
+  "homepage": "https://fonto-docs.elliat.nl",
+  "repository": { "type": "git", "url": "https://github.com/DrRataplan/fonto-docs-mcp" },
   "type": "module",
   "scripts": {
     "start": "node src/server.js",

@@ -162,7 +162,13 @@ const server = createServer(async (req, res) => {
   // ── Smithery / MCP server card ────────────────────────────────────────
   if (url.pathname === "/.well-known/mcp/server-card.json") {
     return json(res, {
-      serverInfo: { name: "fonto-docs", version: "0.1.0" },
+      serverInfo: {
+        name: "fonto-docs",
+        version: "0.1.0",
+        description: "Makes Fonto documentation accessible to AI tools. Fetches the underlying DITA XML and converts it to Markdown on demand — bypassing the JavaScript SPA.",
+        homepage: "https://fonto-docs.elliat.nl",
+        repository: "https://github.com/DrRataplan/fonto-docs-mcp",
+      },
       authentication: { required: false },
       tools: MCP_TOOLS,
       resources: MCP_RESOURCES,
