@@ -103,12 +103,13 @@ function renderApiPage(root, slug) {
 
   // Related links
   const seen = new Set();
-  for (const href of strs("//@href[starts-with(., '/latest/')]", root)) {
-    if (!seen.has(href)) {
-      if (!seen.size) lines.push("## Related pages");
-      seen.add(href);
-      lines.push(`- ${BASE}${href}`);
-    }
+  for (const href of strs("//@reference[starts-with(., '/latest/')]", root)) {
+    const base = href.split("#")[0];
+    // Fragment anchors on this page are opaque UUIDs pointing to members already rendered above
+    if (base.endsWith(slug) || seen.has(base)) continue;
+    if (!seen.size) lines.push("## Related pages");
+    seen.add(base);
+    lines.push(`- ${BASE}${base}`);
   }
   if (seen.size) lines.push("");
 
