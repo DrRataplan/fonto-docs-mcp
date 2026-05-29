@@ -84,16 +84,13 @@ jobs:
     steps:
       - name: PATCH server metadata
         run: |
-          curl -s -X PATCH https://api.smithery.ai/servers/martinmiddel/fonto-docs \
+          curl -sf -X PATCH https://api.smithery.ai/servers/martinmiddel/fonto-docs \
             -H "Authorization: Bearer ${{ secrets.SMITHERY_API_KEY }}" \
             -H "Content-Type: application/json" \
             -d '{
               "displayName": "Fonto Docs MCP",
               "description": "Makes Fonto documentation accessible to AI tools. Fetches the underlying DITA XML and converts it to Markdown on demand — bypassing the JavaScript SPA.",
-              "homepage": "https://fonto-docs.elliat.nl",
-              "repositoryUrl": "https://github.com/DrRataplan/fonto-docs-mcp",
-              "iconUrl": "https://fonto-docs.elliat.nl/favicon.svg",
-              "license": "MIT"
+              "iconUrl": "https://fonto-docs.elliat.nl/favicon.svg"
             }'
 
   release-npm:
