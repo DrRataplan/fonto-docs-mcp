@@ -176,8 +176,8 @@ server.listen(PORT, () => {
 // Colour chosen to be clearly distinct from Fonto's blue palette.
 const FAVICON_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
   <rect width="32" height="32" rx="7" fill="#134e4a"/>
-  <path d="M11 9 L5 16 L11 23" stroke="#5eead4" stroke-width="3" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
-  <path d="M21 9 L27 16 L21 23" stroke="#5eead4" stroke-width="3" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M5 9 L11 16 L5 23" stroke="#5eead4" stroke-width="3" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M27 9 L21 16 L27 23" stroke="#5eead4" stroke-width="3" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
   <circle cx="16" cy="16" r="2.5" fill="#5eead4"/>
 </svg>`;
 
