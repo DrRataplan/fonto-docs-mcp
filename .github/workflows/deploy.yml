@@ -5,8 +5,22 @@ on:
     branches: [main]
 
 jobs:
+  test:
+    name: Test
+    runs-on: ubuntu-latest
+    permissions: {}
+
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v4
+        with:
+          node-version: latest
+      - run: npm ci
+      - run: npm test
+
   deploy-gcp:
-    name: Deploy to Cloud Run + Smithery
+    name: Deploy to Cloud Run
+    needs: test
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -65,6 +79,7 @@ jobs:
 
   release-npm:
     name: Release to npm
+    needs: test
     runs-on: ubuntu-latest
     permissions:
       contents: write        # semantic-release: push tags and create releases
