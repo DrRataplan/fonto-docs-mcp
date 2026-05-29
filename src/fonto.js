@@ -28,6 +28,21 @@ const str  = (expr, node) => evaluateXPathToString(expr, node);
 const strs = (expr, node) => evaluateXPathToStrings(expr, node);
 const nodes = (expr, node) => evaluateXPathToNodes(expr, node);
 
+function renderDescriptionInto(descNode, lines) {
+  for (const child of nodes("paragraph | list", descNode)) {
+    if (child.localName === "paragraph") {
+      lines.push(str(".", child).trim());
+      lines.push("");
+    } else {
+      for (const item of nodes("list-item", child)) {
+        const text = str("paragraph", item).trim();
+        if (text) lines.push(`- ${text}`);
+      }
+      lines.push("");
+    }
+  }
+}
+
 // ---------------------------------------------------------------------------
 // API page renderer  (root element: <type>)
 // ---------------------------------------------------------------------------
@@ -41,9 +56,8 @@ function renderApiPage(root, slug) {
   const name = str("name", root);
   if (name) { lines.push(`## ${name}`); lines.push(""); }
 
-  for (const p of strs("description/paragraph", root)) {
-    lines.push(p.trim()); lines.push("");
-  }
+  const rootDesc = nodes("description", root)[0];
+  if (rootDesc) renderDescriptionInto(rootDesc, lines);
 
   for (const member of nodes("members/type", root)) {
     const mName = str("name", member);
@@ -81,11 +95,8 @@ function renderApiPage(root, slug) {
     }
 
     // Description
-    const descs = strs("description/paragraph", member);
-    if (descs.length) {
-      lines.push("");
-      for (const p of descs) lines.push(p.trim());
-    }
+    const memberDesc = nodes("description", member)[0];
+    if (memberDesc) { lines.push(""); renderDescriptionInto(memberDesc, lines); }
 
     lines.push("");
   }
