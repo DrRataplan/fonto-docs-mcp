@@ -89,7 +89,10 @@ jobs:
             -H "Content-Type: application/json" \
             -d '{
               "displayName": "Fonto Docs MCP",
-              "description": "Makes Fonto documentation accessible to AI tools. Fetches the underlying DITA XML and converts it to Markdown on demand — bypassing the JavaScript SPA."
+              "description": "Makes Fonto documentation accessible to AI tools. Fetches the underlying DITA XML and converts it to Markdown on demand - bypassing the JavaScript SPA.",
+              "homepage": "https://fonto-docs.elliat.nl",
+              "repositoryUrl": "https://github.com/DrRataplan/fonto-docs-mcp",
+              "license": "MIT"
             }'
 
   release-npm:
