@@ -284,16 +284,39 @@ export async function listPages(keyword) {
 
 const SEARCH_API = `${BASE}/api/search/latest`;
 
+const descriptionCache = new Map();
+
+async function extractPageDescription(slug) {
+  if (descriptionCache.has(slug)) return descriptionCache.get(slug);
+  try {
+    const clean = slug.replace(/^\/?(latest\/)?/, "");
+    const res = await fetch(`${BASE}/static/xml/latest/${clean}.xml`, { headers: HEADERS });
+    if (!res.ok) { descriptionCache.set(slug, ""); return ""; }
+    const doc = parseXmlDocument(await res.text());
+    const root = doc.documentElement;
+    const desc = root.localName === "type"
+      ? str("description/paragraph[1]", root).trim()
+      : str("shortdesc", root).trim();
+    descriptionCache.set(slug, desc);
+    return desc;
+  } catch {
+    descriptionCache.set(slug, "");
+    return "";
+  }
+}
+
 export async function searchDocs(query) {
   const url = `${SEARCH_API}?q=${encodeURIComponent(query)}`;
   const res = await fetch(url, { headers: HEADERS });
   if (!res.ok) throw new Error(`Search failed: ${res.status}`);
   const data = await res.json();
-  return (data.results || []).map(r => ({
+  const results = (data.results || []).filter(r => r.pagePath);
+  const descriptions = await Promise.all(results.map(r => extractPageDescription(r.pagePath)));
+  return results.map((r, i) => ({
     title: r.title,
     slug: r.pagePath,
     url: `${BASE}/latest/${r.pagePath}`,
-    description: r.snippet || "",
+    description: descriptions[i],
   }));
 }
 
