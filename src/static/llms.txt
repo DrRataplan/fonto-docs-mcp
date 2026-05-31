@@ -17,7 +17,7 @@ Connect to this server at https://fonto-docs.elliat.nl/mcp (HTTP transport, no a
 
 ## HTTP API
 
-- GET /search?q={query} — Search documentation pages. Returns JSON array of {title, slug, url, description}.
+- GET /search?q={query} — Search documentation pages. Returns JSON object with a `results` array of {title, slug, url, description}.
 - GET /page/{slug} — Fetch a page as Markdown. Example: /page/documentsmanager-f746b3a48442
 - GET /catalog — Full page catalog as Markdown, grouped by section. Add ?section={keyword} to filter.
 
