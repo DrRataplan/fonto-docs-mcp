@@ -134,20 +134,24 @@ export async function handleMcpRequest(body) {
   }
 
   if (method === "tools/call") {
-    const { name, arguments: args } = params;
+    const { name, arguments: args = {} } = params;
+    const toolError = (msg) => ({ jsonrpc: "2.0", id, result: { content: [{ type: "text", text: msg }], isError: true } });
     try {
       let text;
       let structuredContent;
       if (name === "search_fonto_docs") {
+        if (!args.query) return toolError("Missing required argument: query");
         const results = await searchDocs(args.query);
         structuredContent = { results };
         text = results.length === 0
           ? `No results found for "${args.query}".`
           : results.map(r => `**${r.title}**\n${r.description ?? ""}\nURL: ${r.url}\nSlug: ${r.slug}`).join("\n\n---\n\n");
       } else if (name === "get_fonto_page") {
+        if (!args.slug) return toolError("Missing required argument: slug");
         text = await fetchPage(args.slug);
         structuredContent = { content: text };
       } else if (name === "list_pages") {
+        if (!args.keyword) return toolError("Missing required argument: keyword");
         const pages = await listPages(args.keyword);
         structuredContent = { pages };
         text = pages.length === 0
