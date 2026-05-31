@@ -93,7 +93,7 @@ const server = createServer(async (req, res) => {
     try {
       body = JSON.parse(await readBody(req));
     } catch {
-      return json(res, { error: "Invalid JSON" }, 400);
+      return json(res, { jsonrpc: "2.0", id: null, error: { code: -32700, message: "Parse error" } }, 400);
     }
     const logMcp = (req) => {
       if (req.method === "tools/call")
