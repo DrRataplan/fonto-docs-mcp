@@ -198,7 +198,7 @@ const server = createServer(async (req, res) => {
   }
 
   // ── Health check ───────────────────────────────────────────────────────
-  if (url.pathname === "/healthz") return text(res, "ok");
+  if (url.pathname === "/health") return text(res, "ok");
 
   // ── Landing page ───────────────────────────────────────────────────────
   if (url.pathname === "/" || url.pathname === "") return html(res, LANDING_HTML);
