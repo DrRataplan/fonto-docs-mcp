@@ -6,9 +6,9 @@
 
 Connect to this server at https://fonto-docs.elliat.nl/mcp (HTTP transport, no authentication required).
 
-- **search_fonto_docs(query)** — Search the Fonto documentation by keyword. Returns matching pages with titles, descriptions, and slugs.
-- **get_fonto_page(slug)** — Fetch the full content of a Fonto documentation page by its slug. Use search_fonto_docs first to find the right slug.
-- **list_pages(keyword)** — List all pages matching a keyword, filtered across title, product section, and full ancestry hierarchy. Returns slug and breadcrumb path for each match.
+- **search_fonto_docs(query)** — Full-text search, returns results ranked by relevance with titles, descriptions, and slugs. Best for looking up a concept, API name, or feature by keyword.
+- **get_fonto_page(slug)** — Fetch the full content of a Fonto documentation page by its slug (the part of the URL after /latest/). Use search_fonto_docs or list_pages first to find the right slug.
+- **list_pages(keyword)** — Filter pages by title, product, or ancestry keyword. Returns all matches without ranking — useful when you know the product area or part of the page title. For the complete catalog use the fonto://catalog resource.
 
 ## MCP resources
 
