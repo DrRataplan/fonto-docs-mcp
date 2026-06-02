@@ -102,7 +102,7 @@ test("API page: related pages deduplication", () => {
     </members>
   </type>`;
   const md = xmlToMarkdown(xml, "api/my-api");
-  const matches = [...md.matchAll(/documentation\.fontoxml\.com\/latest\/api\/other-api/g)];
+  const matches = [...md.matchAll(/api\/other-api/g)];
   assert.equal(matches.length, 1, "related page should appear only once");
 });
 

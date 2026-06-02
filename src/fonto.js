@@ -144,7 +144,7 @@ function renderApiPage(root, slug) {
     if (base.endsWith(slug) || seen.has(base)) continue;
     if (!seen.size) lines.push("## Related pages");
     seen.add(base);
-    lines.push(`- ${BASE}${base}`);
+    lines.push(`- ${base.replace(/^\/latest\//, "")}`);
   }
   if (seen.size) lines.push("");
 

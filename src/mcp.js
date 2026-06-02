@@ -3,7 +3,7 @@ import { searchDocs, fetchPage, getCatalog, listPages } from "./fonto.js";
 export const MCP_TOOLS = [
   {
     name: "search_fonto_docs",
-    description: "Search the Fonto XML documentation by keyword. Returns matching pages with titles, descriptions, and slugs.",
+    description: "Search the Fonto XML documentation using full-text search. Returns results ranked by relevance with titles, descriptions, and slugs. Best for looking up a concept, API name, or feature by keyword.",
     inputSchema: {
       type: "object",
       properties: { query: { type: "string", description: "Search term, e.g. 'documentsManager'" } },
@@ -38,7 +38,7 @@ export const MCP_TOOLS = [
   },
   {
     name: "get_fonto_page",
-    description: "Fetch the full content of a Fonto documentation page by its slug (the part of the URL after /latest/). Use search_fonto_docs first to find the right slug.",
+    description: "Fetch the full content of a Fonto documentation page by its slug (the part of the URL after /latest/). Use search_fonto_docs or list_pages first to find the right slug.",
     inputSchema: {
       type: "object",
       properties: { slug: { type: "string", description: "Page slug, e.g. 'documentsmanager-f746b3a48442'" } },
@@ -61,7 +61,7 @@ export const MCP_TOOLS = [
   },
   {
     name: "list_pages",
-    description: "List Fonto documentation pages whose titles match a keyword. Useful for discovery when you don't know the exact slug. Returns slug, title, and URL for each match. For a full catalog use the fonto://catalog resource.",
+    description: "Filter Fonto documentation pages by title, product, or ancestry keyword. Returns all matches without ranking — useful when you know the product area or part of the page title. For full-text relevance search use search_fonto_docs; for the complete catalog use the fonto://catalog resource.",
     inputSchema: {
       type: "object",
       properties: { keyword: { type: "string", description: "Word or phrase to filter page titles by, e.g. 'operations' or 'table'" } },
@@ -77,9 +77,11 @@ export const MCP_TOOLS = [
             properties: {
               slug: { type: "string" },
               title: { type: "string" },
+              url: { type: "string" },
+              product: { type: "string" },
               ancestry: { type: "array", items: { type: "string" } },
             },
-            required: ["slug", "title"],
+            required: ["slug", "title", "url"],
           },
         },
       },
