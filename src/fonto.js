@@ -284,16 +284,55 @@ export async function listPages(keyword) {
 
 const SEARCH_API = `${BASE}/api/search/latest`;
 
+const DESC_TTL_MS = 60 * 60 * 1000; // 1 hour
+const descriptionCache = new Map(); // slug -> { desc, expiresAt }
+
+function getCachedDescription(slug) {
+  const entry = descriptionCache.get(slug);
+  if (!entry) return null;
+  if (Date.now() > entry.expiresAt) { descriptionCache.delete(slug); return null; }
+  return entry.desc;
+}
+
+function setCachedDescription(slug, desc) {
+  descriptionCache.set(slug, { desc, expiresAt: Date.now() + DESC_TTL_MS });
+}
+
+function extractDescription(root) {
+  return root.localName === "type"
+    ? str("description/paragraph[1]", root).trim()
+    : str("shortdesc", root).trim();
+}
+
+async function extractPageDescription(slug) {
+  const cached = getCachedDescription(slug);
+  if (cached !== null) return cached;
+  try {
+    const clean = slug.replace(/^\/?(latest\/)?/, "");
+    const res = await fetch(`${BASE}/static/xml/latest/${clean}.xml`, { headers: HEADERS });
+    if (!res.ok) { setCachedDescription(slug, ""); return ""; }
+    const doc = parseXmlDocument(await res.text());
+    const desc = extractDescription(doc.documentElement);
+    setCachedDescription(slug, desc);
+    return desc;
+  } catch {
+    setCachedDescription(slug, "");
+    return "";
+  }
+}
+
 export async function searchDocs(query) {
   const url = `${SEARCH_API}?q=${encodeURIComponent(query)}`;
   const res = await fetch(url, { headers: HEADERS });
   if (!res.ok) throw new Error(`Search failed: ${res.status}`);
   const data = await res.json();
-  return (data.results || []).map(r => ({
+  const results = (data.results || []).filter(r => r.pagePath);
+  const descriptions = await Promise.all(results.map(r => extractPageDescription(r.pagePath)));
+  return results.map((r, i) => ({
     title: r.title,
     slug: r.pagePath,
     url: `${BASE}/latest/${r.pagePath}`,
-    description: r.snippet || "",
+    description: descriptions[i],
   }));
 }
 
@@ -303,8 +342,11 @@ export async function searchDocs(query) {
 
 export async function fetchPage(slug) {
   const clean = slug.replace(/^\/?(latest\/)?/, "");
-  const xmlUrl = `${BASE}/static/xml/latest/${clean}.xml`;
-  const res = await fetch(xmlUrl, { headers: HEADERS });
+  const res = await fetch(`${BASE}/static/xml/latest/${clean}.xml`, { headers: HEADERS });
   if (!res.ok) throw new Error(`Could not fetch "${slug}" (HTTP ${res.status}). Try searching first to find the correct slug.`);
-  return xmlToMarkdown(await res.text(), slug);
+  const xml = await res.text();
+  const doc = parseXmlDocument(xml);
+  const root = doc.documentElement;
+  setCachedDescription(slug, extractDescription(root));
+  return root.localName === "type" ? renderApiPage(root, slug) : renderDitaPage(root, slug);
 }
