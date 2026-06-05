@@ -12,7 +12,7 @@ jobs:
 
     steps:
       - uses: actions/checkout@v6
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v6
         with:
           node-version: latest
       - run: npm ci
@@ -111,7 +111,7 @@ jobs:
         with:
           fetch-depth: 0  # semantic-release needs full git history
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v6
         with:
           node-version: latest
           registry-url: https://registry.npmjs.org
