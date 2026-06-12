@@ -102,13 +102,19 @@ const server = createServer(async (req, res) => {
       if (req.method === "tools/call")
         logEvent({ type: "mcp_tool_call", tool: req.params?.name, args: req.params?.arguments });
     };
+    const logMcpError = (req, res) => {
+      if (req.method === "tools/call" && res?.result?.isError)
+        logEvent({ type: "mcp_tool_error", tool: req.params?.name, args: req.params?.arguments, error: res.result.content?.[0]?.text });
+    };
     if (Array.isArray(body)) {
       body.forEach(logMcp);
       const responses = (await Promise.all(body.map(handleMcpRequest))).filter(Boolean);
+      body.forEach((req, i) => logMcpError(req, responses[i]));
       return json(res, responses);
     }
     logMcp(body);
     const response = await handleMcpRequest(body);
+    logMcpError(body, response);
     if (!response) { res.writeHead(202); return res.end(); }
     return json(res, response);
   }
