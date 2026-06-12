@@ -88,7 +88,10 @@ const server = createServer(async (req, res) => {
 
   // ── MCP ────────────────────────────────────────────────────────────────
   if (url.pathname === "/mcp") {
-    if (req.method !== "POST") return json(res, { error: "POST required" }, 405);
+    if (req.method !== "POST") {
+      res.setHeader("Allow", "POST");
+      return json(res, { error: "POST required" }, 405);
+    }
     let body;
     try {
       body = JSON.parse(await readBody(req));
