@@ -113,15 +113,28 @@ jobs:
         run: |
           VERSION=$(git tag --sort=-version:refname | head -1 | sed 's/^v//')
           jq --arg v "$VERSION" '.version = $v' server.json > server.tmp && mv server.tmp server.json
+          echo "VERSION=$VERSION" >> "$GITHUB_ENV"
+
+      - name: Check if version already published
+        id: check
+        run: |
+          PUBLISHED=$(curl -sf "https://registry.modelcontextprotocol.io/v0.1/servers/io.github.DrRataplan%2Ffonto-docs" | jq -r '.version // ""')
+          if [ "$PUBLISHED" = "$VERSION" ]; then
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+            echo "Version $VERSION already published, skipping."
+          fi
 
       - name: Install mcp-publisher
+        if: steps.check.outputs.skip != 'true'
         run: |
-          curl -L "https://github.com/modelcontextprotocol/registry/releases/latest/download/mcp-publisher_$(uname -s | tr '[:upper:]' '[:lower:]')_$(uname -m | sed 's/x86_64/amd64/;s/aarch64/arm64/').tar.gz" | tar xz mcp-publisher
+          curl -L "https://github.com/modelcontextprotocol/registry/releases/latest/download/mcp-publisher_$(uname -s | tr '[:upper:]' '[:lower:]')_$(uname -m | sed 's/x86_64/amd64/;s/aarch64/arm64/').tar.gz" | tar xzf - mcp-publisher
 
       - name: Authenticate to MCP Registry
+        if: steps.check.outputs.skip != 'true'
         run: ./mcp-publisher login github-oidc
 
       - name: Publish to MCP Registry
+        if: steps.check.outputs.skip != 'true'
         run: ./mcp-publisher publish
 
   release-npm:
