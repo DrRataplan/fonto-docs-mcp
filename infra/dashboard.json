@@ -1,0 +1,206 @@
+{
+  "displayName": "Fonto Docs MCP",
+  "etag": "ecc94e1cfab22aa1408ab7029c4ce263",
+  "mosaicLayout": {
+    "columns": 12,
+    "tiles": [
+      {
+        "xPos": 0,
+        "yPos": 0,
+        "width": 6,
+        "height": 4,
+        "widget": {
+          "title": "Requests per minute",
+          "xyChart": {
+            "dataSets": [
+              {
+                "timeSeriesQuery": {
+                  "timeSeriesFilter": {
+                    "filter": "resource.type=\"cloud_run_revision\" resource.labels.service_name=\"fonto-docs-mcp\" metric.type=\"run.googleapis.com/request_count\"",
+                    "aggregation": {
+                      "alignmentPeriod": "60s",
+                      "perSeriesAligner": "ALIGN_RATE",
+                      "crossSeriesReducer": "REDUCE_SUM",
+                      "groupByFields": ["metric.labels.response_code_class"]
+                    }
+                  }
+                },
+                "plotType": "LINE",
+                "legendTemplate": "${metric.labels.response_code_class}"
+              }
+            ],
+            "timeshiftDuration": "0s",
+            "yAxis": { "scale": "LINEAR" }
+          }
+        }
+      },
+      {
+        "xPos": 6,
+        "yPos": 0,
+        "width": 6,
+        "height": 4,
+        "widget": {
+          "title": "Request latency (ms)",
+          "xyChart": {
+            "dataSets": [
+              {
+                "timeSeriesQuery": {
+                  "timeSeriesFilter": {
+                    "filter": "resource.type=\"cloud_run_revision\" resource.labels.service_name=\"fonto-docs-mcp\" metric.type=\"run.googleapis.com/request_latencies\"",
+                    "aggregation": {
+                      "alignmentPeriod": "60s",
+                      "perSeriesAligner": "ALIGN_DELTA",
+                      "crossSeriesReducer": "REDUCE_PERCENTILE_50"
+                    }
+                  }
+                },
+                "plotType": "LINE",
+                "legendTemplate": "p50"
+              },
+              {
+                "timeSeriesQuery": {
+                  "timeSeriesFilter": {
+                    "filter": "resource.type=\"cloud_run_revision\" resource.labels.service_name=\"fonto-docs-mcp\" metric.type=\"run.googleapis.com/request_latencies\"",
+                    "aggregation": {
+                      "alignmentPeriod": "60s",
+                      "perSeriesAligner": "ALIGN_DELTA",
+                      "crossSeriesReducer": "REDUCE_PERCENTILE_95"
+                    }
+                  }
+                },
+                "plotType": "LINE",
+                "legendTemplate": "p95"
+              }
+            ],
+            "yAxis": { "scale": "LINEAR" }
+          }
+        }
+      },
+      {
+        "xPos": 0,
+        "yPos": 4,
+        "width": 6,
+        "height": 4,
+        "widget": {
+          "title": "MCP tool calls per minute",
+          "xyChart": {
+            "dataSets": [
+              {
+                "timeSeriesQuery": {
+                  "timeSeriesFilter": {
+                    "filter": "resource.type=\"cloud_run_revision\" resource.labels.service_name=\"fonto-docs-mcp\" metric.type=\"logging.googleapis.com/user/mcp_tool_calls\"",
+                    "aggregation": {
+                      "alignmentPeriod": "60s",
+                      "perSeriesAligner": "ALIGN_RATE",
+                      "crossSeriesReducer": "REDUCE_SUM"
+                    }
+                  }
+                },
+                "plotType": "STACKED_BAR",
+                "legendTemplate": "tool calls"
+              }
+            ],
+            "yAxis": { "scale": "LINEAR" }
+          }
+        }
+      },
+      {
+        "xPos": 6,
+        "yPos": 4,
+        "width": 6,
+        "height": 4,
+        "widget": {
+          "title": "Active instances",
+          "xyChart": {
+            "dataSets": [
+              {
+                "timeSeriesQuery": {
+                  "timeSeriesFilter": {
+                    "filter": "resource.type=\"cloud_run_revision\" resource.labels.service_name=\"fonto-docs-mcp\" metric.type=\"run.googleapis.com/container/instance_count\"",
+                    "aggregation": {
+                      "alignmentPeriod": "60s",
+                      "perSeriesAligner": "ALIGN_MEAN",
+                      "crossSeriesReducer": "REDUCE_SUM",
+                      "groupByFields": ["metric.labels.state"]
+                    }
+                  }
+                },
+                "plotType": "LINE",
+                "legendTemplate": "${metric.labels.state}"
+              }
+            ],
+            "yAxis": { "scale": "LINEAR" }
+          }
+        }
+      },
+      {
+        "xPos": 0,
+        "yPos": 8,
+        "width": 6,
+        "height": 4,
+        "widget": {
+          "title": "Recent MCP tool call logs",
+          "logsPanel": {
+            "filter": "resource.type=\"cloud_run_revision\" resource.labels.service_name=\"fonto-docs-mcp\" jsonPayload.type=\"mcp_tool_call\"",
+            "resourceNames": ["projects/fonto-docs-mcp"]
+          }
+        }
+      },
+      {
+        "xPos": 6,
+        "yPos": 8,
+        "width": 6,
+        "height": 4,
+        "widget": {
+          "title": "Recent MCP tool error logs",
+          "logsPanel": {
+            "filter": "resource.type=\"cloud_run_revision\" resource.labels.service_name=\"fonto-docs-mcp\" jsonPayload.type=\"mcp_tool_error\"",
+            "resourceNames": ["projects/fonto-docs-mcp"]
+          }
+        }
+      },
+      {
+        "xPos": 0,
+        "yPos": 12,
+        "width": 6,
+        "height": 4,
+        "widget": {
+          "title": "HTTP requests per minute",
+          "xyChart": {
+            "dataSets": [
+              {
+                "timeSeriesQuery": {
+                  "timeSeriesFilter": {
+                    "filter": "resource.type=\"cloud_run_revision\" resource.labels.service_name=\"fonto-docs-mcp\" metric.type=\"run.googleapis.com/request_count\"",
+                    "aggregation": {
+                      "alignmentPeriod": "60s",
+                      "perSeriesAligner": "ALIGN_RATE",
+                      "crossSeriesReducer": "REDUCE_SUM",
+                      "groupByFields": ["metric.labels.response_code_class"]
+                    }
+                  }
+                },
+                "plotType": "STACKED_BAR",
+                "legendTemplate": "${metric.labels.response_code_class}"
+              }
+            ],
+            "yAxis": { "scale": "LINEAR" }
+          }
+        }
+      },
+      {
+        "xPos": 6,
+        "yPos": 12,
+        "width": 6,
+        "height": 4,
+        "widget": {
+          "title": "Recent HTTP request logs",
+          "logsPanel": {
+            "filter": "resource.type=\"cloud_run_revision\" resource.labels.service_name=\"fonto-docs-mcp\" httpRequest.requestUrl!=\"\"",
+            "resourceNames": ["projects/fonto-docs-mcp"]
+          }
+        }
+      }
+    ]
+  }
+}
