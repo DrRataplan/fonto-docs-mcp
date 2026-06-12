@@ -118,7 +118,8 @@ jobs:
       - name: Check if version already published
         id: check
         run: |
-          PUBLISHED=$(curl -sf "https://registry.modelcontextprotocol.io/v0.1/servers/io.github.DrRataplan%2Ffonto-docs" | jq -r '.version // ""')
+          PUBLISHED=$(curl -s "https://registry.modelcontextprotocol.io/v0.1/servers?search=io.github.DrRataplan%2Ffonto-docs" \
+            | jq -r '[.servers[] | select(._meta["io.modelcontextprotocol.registry/official"].isLatest == true)] | .[0].server.version // ""')
           if [ "$PUBLISHED" = "$VERSION" ]; then
             echo "skip=true" >> "$GITHUB_OUTPUT"
             echo "Version $VERSION already published, skipping."
