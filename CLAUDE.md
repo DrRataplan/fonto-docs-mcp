@@ -30,7 +30,7 @@ Fonto XML has two document shapes:
 
 ## Caching
 
-Page content (`get_fonto_page`) is never cached — every call fetches live from `documentation.fontoxml.com`. The page catalog (`list_pages`, `fonto://catalog`) is fetched once from the Fonto search index on first use and held in the `catalogCache` module variable for the lifetime of the process. Tests that hit the network are slow and fragile — prefer unit tests with fixture XML.
+Page content (`get_fonto_page`) is cached in-process for 10 minutes (max 200 entries, expired entries evicted on overflow) to absorb same-session refetches. The page catalog (`list_pages`, `fonto://catalog`) is fetched once from the Fonto search index on first use and held in the `catalogCache` module variable for the lifetime of the process. Tests that hit the network are slow and fragile — prefer unit tests with fixture XML.
 
 ## Deployment
 

@@ -298,13 +298,26 @@ export async function searchDocs(query) {
 }
 
 // ---------------------------------------------------------------------------
-// Fetch a page
+// Fetch a page  (10-minute in-process cache to absorb same-session refetches)
 // ---------------------------------------------------------------------------
+
+const PAGE_CACHE_TTL = 10 * 60 * 1000;
+const pageCache = new Map(); // slug -> { markdown, expiresAt }
 
 export async function fetchPage(slug) {
   const clean = slug.replace(/^\/?(latest\/)?/, "");
+  const cached = pageCache.get(clean);
+  if (cached && cached.expiresAt > Date.now()) return cached.markdown;
+
   const xmlUrl = `${BASE}/static/xml/latest/${clean}.xml`;
   const res = await fetch(xmlUrl, { headers: HEADERS });
   if (!res.ok) throw new Error(`Could not fetch "${slug}" (HTTP ${res.status}). Try searching first to find the correct slug.`);
-  return xmlToMarkdown(await res.text(), slug);
+  const markdown = xmlToMarkdown(await res.text(), slug);
+
+  if (pageCache.size >= 200) {
+    const now = Date.now();
+    for (const [k, v] of pageCache) if (v.expiresAt <= now) pageCache.delete(k);
+  }
+  pageCache.set(clean, { markdown, expiresAt: Date.now() + PAGE_CACHE_TTL });
+  return markdown;
 }
