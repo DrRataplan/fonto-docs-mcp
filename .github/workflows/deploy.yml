@@ -106,11 +106,12 @@ jobs:
 
     steps:
       - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
 
       - name: Sync version from git tag
         run: |
-          git fetch --tags
-          VERSION=$(git describe --tags --abbrev=0 | sed 's/^v//')
+          VERSION=$(git tag --sort=-version:refname | head -1 | sed 's/^v//')
           jq --arg v "$VERSION" '.version = $v' server.json > server.tmp && mv server.tmp server.json
 
       - name: Install mcp-publisher
