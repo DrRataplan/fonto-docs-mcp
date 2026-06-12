@@ -289,7 +289,7 @@ export async function searchDocs(query) {
   const res = await fetch(url, { headers: HEADERS });
   if (!res.ok) throw new Error(`Search failed: ${res.status}`);
   const data = await res.json();
-  return (data.results || []).map(r => ({
+  return (data.results || []).slice(0, 20).map(r => ({
     title: r.title,
     slug: r.pagePath,
     url: `${BASE}/latest/${r.pagePath}`,
