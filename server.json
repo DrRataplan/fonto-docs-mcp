@@ -1,0 +1,17 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+  "name": "io.github.DrRataplan/fonto-docs",
+  "title": "Fonto Docs",
+  "description": "Fonto documentation for AI tools. Converts DITA XML to Markdown on demand.",
+  "repository": {
+    "url": "https://github.com/DrRataplan/fonto-docs-mcp",
+    "source": "github"
+  },
+  "version": "1.2.9",
+  "remotes": [
+    {
+      "type": "streamable-http",
+      "url": "https://fonto-docs.elliat.nl/mcp"
+    }
+  ]
+}

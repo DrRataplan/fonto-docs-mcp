@@ -1,6 +1,7 @@
 {
   "name": "fonto-docs-mcp",
   "version": "0.1.0",
+  "mcpName": "io.github.DrRataplan/fonto-docs",
   "description": "MCP server that makes Fonto documentation accessible to AI tools like Claude, Cursor, and Claude Desktop",
   "keywords": [
     "mcp",
