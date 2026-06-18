@@ -48,12 +48,12 @@ function renderSimpletable(table, lines) {
   const dataRows = nodes("strow", table);
   if (!headerEntries.length && !dataRows.length) return;
   if (headerEntries.length) {
-    lines.push("| " + headerEntries.map(renderStentry).join(" | ") + " |");
+    lines.push("| " + headerEntries.map(e => renderStentry(e)).join(" | ") + " |");
     lines.push("| " + headerEntries.map(() => "---").join(" | ") + " |");
   }
   for (const row of dataRows) {
     const entries = nodes("stentry", row);
-    lines.push("| " + entries.map(renderStentry).join(" | ") + " |");
+    lines.push("| " + entries.map(e => renderStentry(e)).join(" | ") + " |");
   }
   lines.push("");
 }
@@ -66,7 +66,7 @@ function renderDescriptionInto(descNode, lines) {
     } else {
       for (const item of nodes("list-item", child)) {
         const paras = nodes("paragraph", item);
-        const text = paras.length ? paras.map(renderInline).join(" ") : renderInline(item);
+        const text = paras.length ? paras.map(p => renderInline(p)).join(" ") : renderInline(item);
         if (text) lines.push(`- ${text}`);
       }
       lines.push("");
@@ -95,7 +95,7 @@ function renderTypeFromRestrict(restrictNode) {
   // Union: <restrict type="union"><type/><type/>...</restrict>
   const unionRestrict = nodes("restrict[@type='union']", restrictNode)[0];
   if (unionRestrict) {
-    return nodes("type", unionRestrict).map(renderTypeNode).join(" | ");
+    return nodes("type", unionRestrict).map(t => renderTypeNode(t)).join(" | ");
   }
   // Simple: <type base="..."/> or <type><name>...</name></type> with optional <value> children
   const simpleType = nodes("type", restrictNode)[0];
@@ -117,6 +117,56 @@ function renderApiPage(root, slug) {
 
   const rootDesc = nodes("description", root)[0];
   if (rootDesc) renderDescriptionInto(rootDesc, lines);
+
+  // Overloaded function/hook: description + parameters from first overload, return type variants listed
+  const overloads = nodes("overloads/type", root);
+  if (overloads.length) {
+    for (const overload of overloads) {
+      const desc = nodes("description", overload)[0];
+      if (desc) { renderDescriptionInto(desc, lines); break; }
+    }
+
+    const firstArgs = nodes("arguments/type", overloads[0]);
+    if (firstArgs.length) {
+      lines.push("## Parameters");
+      lines.push("");
+      for (const arg of firstArgs) {
+        const argName = str("name", arg);
+        if (!argName) continue;
+        const isOptional = str("restrict/@optional", arg) === "true";
+        lines.push(`### \`${argName}\``);
+        if (isOptional) lines.push("*Optional*");
+        lines.push("");
+        const restrictNode = nodes("restrict", arg)[0];
+        if (restrictNode) {
+          const typeStr = renderTypeFromRestrict(restrictNode);
+          if (typeStr) { lines.push(`**Type:** \`${typeStr}\``); lines.push(""); }
+        }
+        const argDesc = nodes("description", arg)[0];
+        if (argDesc) renderDescriptionInto(argDesc, lines);
+      }
+    }
+
+    const retEntries = [];
+    for (const overload of overloads) {
+      const retRestrictNode = nodes("return/type/restrict", overload)[0];
+      const retDescNode = nodes("return/type/description", overload)[0];
+      const typeStr = retRestrictNode ? renderTypeFromRestrict(retRestrictNode) : "";
+      const descStr = retDescNode ? str("paragraph[1]", retDescNode).trim() : "";
+      if (typeStr) retEntries.push({ typeStr, descStr });
+    }
+    if (retEntries.length === 1) {
+      lines.push(`**Returns:** \`${retEntries[0].typeStr}\`${retEntries[0].descStr ? ` — ${retEntries[0].descStr}` : ""}`);
+      lines.push("");
+    } else if (retEntries.length > 1) {
+      lines.push("## Overloads");
+      lines.push("");
+      for (const { typeStr, descStr } of retEntries) {
+        lines.push(`- Returns \`${typeStr}\`${descStr ? ` — ${descStr}` : ""}`);
+      }
+      lines.push("");
+    }
+  }
 
   // Component props (root-level <arguments>)
   const rootArgs = nodes("arguments/type", root);
