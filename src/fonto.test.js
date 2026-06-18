@@ -87,6 +87,78 @@ test("API page: code examples section", () => {
   assert.match(md, /```\nconst x = create\(\);\n```/);
 });
 
+test("API page: source element rendered as source file line", () => {
+  const xml = `<type>
+    <name>FxButton</name>
+    <source export="default">fontoxml-fx/src/FxButton.ts</source>
+  </type>`;
+  const md = xmlToMarkdown(xml, "fxbutton-abc");
+  assert.match(md, /Source file: `fontoxml-fx\/src\/FxButton\.ts`/);
+});
+
+test("API page: code-phrase in description renders as inline code", () => {
+  const xml = `<type>
+    <name>FxButton</name>
+    <description>
+      <paragraph>Use <code-phrase>operationState.active</code-phrase> to check state.</paragraph>
+    </description>
+  </type>`;
+  const md = xmlToMarkdown(xml, "fxbutton-abc");
+  assert.match(md, /`operationState\.active`/);
+});
+
+test("API page: link elements in description render as Markdown links", () => {
+  const xml = `<type>
+    <name>FxButton</name>
+    <description>
+      <paragraph>A <link reference="/latest/button-abc">Button</link> component.</paragraph>
+    </description>
+  </type>`;
+  const md = xmlToMarkdown(xml, "fxbutton-abc");
+  assert.match(md, /\[Button\]\(https:\/\/documentation\.fontoxml\.com\/latest\/button-abc\)/);
+});
+
+test("API page: string enum prop shows allowed values joined by pipe", () => {
+  const xml = `<type>
+    <name>FxButton</name>
+    <arguments>
+      <type id="id-1">
+        <name>type</name>
+        <restrict optional="true">
+          <type base="string">
+            <value serialization="json">"default"</value>
+            <value serialization="json">"primary"</value>
+            <value serialization="json">"warning"</value>
+          </type>
+        </restrict>
+        <description><paragraph>Button style.</paragraph></description>
+      </type>
+    </arguments>
+  </type>`;
+  const md = xmlToMarkdown(xml, "fxbutton-abc");
+  assert.match(md, /\*\*Type:\*\* `"default" \| "primary" \| "warning"`/);
+});
+
+test("API page: generic type prop renders as Array<T>", () => {
+  const xml = `<type>
+    <name>FxList</name>
+    <arguments>
+      <type id="id-1">
+        <name>items</name>
+        <restrict>
+          <restrict type="generic">
+            <type><name>Array</name></type>
+            <type reference="/latest/fxitem-abc"><name>FxItem</name></type>
+          </restrict>
+        </restrict>
+        <description><paragraph>List items.</paragraph></description>
+      </type>
+    </arguments>
+  </type>`;
+  const md = xmlToMarkdown(xml, "fxlist-abc");
+  assert.match(md, /\*\*Type:\*\* `Array<FxItem>`/);
+});
+
 test("API page: related pages deduplication", () => {
   const xml = `<type>
     <name>MyApi</name>
