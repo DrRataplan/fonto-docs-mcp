@@ -24,8 +24,12 @@ function renderInline(node) {
   for (const child of nodes("node()", node)) {
     if (child.nodeType === 3) {
       result += child.nodeValue || "";
-    } else if (child.localName === "codeph" || child.localName === "filepath" || child.localName === "varname") {
+    } else if (child.localName === "codeph" || child.localName === "filepath" || child.localName === "varname" || child.localName === "code-phrase") {
       result += `\`${str(".", child)}\``;
+    } else if (child.localName === "link") {
+      const href = str("@reference", child);
+      const text = str(".", child).trim();
+      result += href ? `[${text}](${BASE}${href})` : text;
     } else {
       result += str(".", child);
     }
@@ -57,11 +61,12 @@ function renderSimpletable(table, lines) {
 function renderDescriptionInto(descNode, lines) {
   for (const child of nodes("paragraph | list", descNode)) {
     if (child.localName === "paragraph") {
-      lines.push(str(".", child).trim());
+      lines.push(renderInline(child));
       lines.push("");
     } else {
       for (const item of nodes("list-item", child)) {
-        const text = str("paragraph", item).trim();
+        const paras = nodes("paragraph", item);
+        const text = paras.length ? paras.map(renderInline).join(" ") : renderInline(item);
         if (text) lines.push(`- ${text}`);
       }
       lines.push("");
@@ -73,14 +78,29 @@ function renderDescriptionInto(descNode, lines) {
 // API page renderer  (root element: <type>)
 // ---------------------------------------------------------------------------
 
+function renderTypeNode(typeNode) {
+  // String enum: <type base="string"><value>"a"</value><value>"b"</value></type>
+  const values = strs("value", typeNode);
+  if (values.length) return values.join(" | ");
+  return str("name", typeNode) || str("@base", typeNode) || "";
+}
+
 function renderTypeFromRestrict(restrictNode) {
-  // Union: <restrict><restrict type="union"><type/><type/>...</restrict></restrict>
-  const unionTypes = nodes("restrict[@type='union']/type", restrictNode);
-  if (unionTypes.length) {
-    return unionTypes.map(t => str("name", t) || str("@base", t) || "unknown").join(" | ");
+  // Generic: <restrict type="generic"><type>Array</type><type>T</type></restrict>
+  const genericRestrict = nodes("restrict[@type='generic']", restrictNode)[0];
+  if (genericRestrict) {
+    const parts = nodes("type", genericRestrict).map(t => str("name", t) || str("@base", t)).filter(Boolean);
+    return parts.length >= 2 ? `${parts[0]}<${parts.slice(1).join(", ")}>` : parts.join("");
   }
-  // Simple: <restrict><type base="..."/> or <type><name>...</name></type></restrict>
-  return str("type/@base", restrictNode) || str("type/name", restrictNode) || "";
+  // Union: <restrict type="union"><type/><type/>...</restrict>
+  const unionRestrict = nodes("restrict[@type='union']", restrictNode)[0];
+  if (unionRestrict) {
+    return nodes("type", unionRestrict).map(renderTypeNode).join(" | ");
+  }
+  // Simple: <type base="..."/> or <type><name>...</name></type> with optional <value> children
+  const simpleType = nodes("type", restrictNode)[0];
+  if (simpleType) return renderTypeNode(simpleType);
+  return "";
 }
 
 function renderApiPage(root, slug) {
@@ -91,6 +111,9 @@ function renderApiPage(root, slug) {
 
   const name = str("name", root);
   if (name) { lines.push(`## ${name}`); lines.push(""); }
+
+  const source = str("source", root);
+  if (source) { lines.push(`*Source file: \`${source.trim()}\`*`); lines.push(""); }
 
   const rootDesc = nodes("description", root)[0];
   if (rootDesc) renderDescriptionInto(rootDesc, lines);
