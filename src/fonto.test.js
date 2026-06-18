@@ -106,6 +106,41 @@ test("API page: related pages deduplication", () => {
   assert.equal(matches.length, 1, "related page should appear only once");
 });
 
+test("API page: component props with required, optional, union, and simple types", () => {
+  const xml = `<type>
+    <name>FxProfileChip</name>
+    <arguments>
+      <type id="id-1">
+        <name>profileId</name>
+        <restrict>
+          <restrict type="union">
+            <type reference="/latest/profileid-abc"><name>ProfileId</name></type>
+            <type base="null"/>
+          </restrict>
+        </restrict>
+        <description><paragraph>ID of the profile.</paragraph></description>
+      </type>
+      <type id="id-2">
+        <name>isCondensed</name>
+        <restrict optional="true">
+          <type base="boolean"/>
+        </restrict>
+        <description><paragraph>Show condensed chip.</paragraph></description>
+      </type>
+    </arguments>
+  </type>`;
+  const md = xmlToMarkdown(xml, "fxprofilechip-abc");
+  assert.match(md, /## Component props/);
+  assert.match(md, /### `profileId`/);
+  assert.match(md, /\*Required\*/);
+  assert.match(md, /\*\*Type:\*\* `ProfileId \| null`/);
+  assert.match(md, /ID of the profile\./);
+  assert.match(md, /### `isCondensed`/);
+  assert.match(md, /\*Optional\*/);
+  assert.match(md, /\*\*Type:\*\* `boolean`/);
+  assert.match(md, /Show condensed chip\./);
+});
+
 test("API page: related pages excludes self-references", () => {
   const xml = `<type>
     <name>MyApi</name>
