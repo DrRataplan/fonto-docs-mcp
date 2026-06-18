@@ -81,16 +81,30 @@ const server = createServer(async (req, res) => {
     res.writeHead(204, {
       "Access-Control-Allow-Origin": "*",
       "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
-      "Access-Control-Allow-Headers": "Content-Type",
+      "Access-Control-Allow-Headers": "Content-Type, Accept",
     });
     return res.end();
   }
 
   // ── MCP ────────────────────────────────────────────────────────────────
   if (url.pathname === "/mcp") {
+    if (req.method === "GET") {
+      // MCP Streamable HTTP transport: GET opens an SSE stream for server-to-client push.
+      // This server never initiates messages, so the stream stays open until the client disconnects.
+      res.writeHead(200, {
+        "Content-Type": "text/event-stream",
+        "Cache-Control": "no-cache",
+        "Connection": "keep-alive",
+        "Access-Control-Allow-Origin": "*",
+      });
+      res.write(": connected\n\n");
+      const keepAlive = setInterval(() => res.write(": keep-alive\n\n"), 30000);
+      req.on("close", () => clearInterval(keepAlive));
+      return;
+    }
     if (req.method !== "POST") {
-      res.setHeader("Allow", "POST");
-      return json(res, { error: "POST required" }, 405);
+      res.setHeader("Allow", "GET, POST");
+      return json(res, { error: "GET or POST required" }, 405);
     }
     let body;
     try {
