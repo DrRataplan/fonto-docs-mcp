@@ -73,6 +73,16 @@ function renderDescriptionInto(descNode, lines) {
 // API page renderer  (root element: <type>)
 // ---------------------------------------------------------------------------
 
+function renderTypeFromRestrict(restrictNode) {
+  // Union: <restrict><restrict type="union"><type/><type/>...</restrict></restrict>
+  const unionTypes = nodes("restrict[@type='union']/type", restrictNode);
+  if (unionTypes.length) {
+    return unionTypes.map(t => str("name", t) || str("@base", t) || "unknown").join(" | ");
+  }
+  // Simple: <restrict><type base="..."/> or <type><name>...</name></type></restrict>
+  return str("type/@base", restrictNode) || str("type/name", restrictNode) || "";
+}
+
 function renderApiPage(root, slug) {
   const lines = [];
   lines.push(`# ${slug}`);
@@ -84,6 +94,28 @@ function renderApiPage(root, slug) {
 
   const rootDesc = nodes("description", root)[0];
   if (rootDesc) renderDescriptionInto(rootDesc, lines);
+
+  // Component props (root-level <arguments>)
+  const rootArgs = nodes("arguments/type", root);
+  if (rootArgs.length) {
+    lines.push("## Component props");
+    lines.push("");
+    for (const arg of rootArgs) {
+      const argName = str("name", arg);
+      if (!argName) continue;
+      const isOptional = str("restrict/@optional", arg) === "true";
+      lines.push(`### \`${argName}\``);
+      lines.push(isOptional ? "*Optional*" : "*Required*");
+      lines.push("");
+      const restrictNode = nodes("restrict", arg)[0];
+      if (restrictNode) {
+        const typeStr = renderTypeFromRestrict(restrictNode);
+        if (typeStr) { lines.push(`**Type:** \`${typeStr}\``); lines.push(""); }
+      }
+      const argDesc = nodes("description", arg)[0];
+      if (argDesc) renderDescriptionInto(argDesc, lines);
+    }
+  }
 
   for (const member of nodes("members/type", root)) {
     const mName = str("name", member);
