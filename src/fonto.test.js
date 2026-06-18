@@ -87,6 +87,63 @@ test("API page: code examples section", () => {
   assert.match(md, /```\nconst x = create\(\);\n```/);
 });
 
+test("API page: overloaded function renders description, parameters, and return overloads", () => {
+  const xml = `<type>
+    <name>useXPath</name>
+    <overloads>
+      <type>
+        <description>
+          <paragraph>A React hook which runs an XPath expression.</paragraph>
+        </description>
+        <arguments>
+          <type id="id-1">
+            <name>expression</name>
+            <restrict>
+              <restrict type="union">
+                <type><name>XPathQuery</name></type>
+                <type base="null"/>
+              </restrict>
+            </restrict>
+            <description><paragraph>The XPath expression to evaluate.</paragraph></description>
+          </type>
+          <type id="id-2">
+            <name>options</name>
+            <restrict optional="true">
+              <type><name>XPathObserverOptions</name></type>
+            </restrict>
+          </type>
+        </arguments>
+        <return>
+          <type>
+            <restrict><type base="string"/></restrict>
+          </type>
+        </return>
+      </type>
+      <type>
+        <arguments>
+          <type id="id-1b"><name>expression</name><restrict><type base="null"/></restrict></type>
+        </arguments>
+        <return>
+          <type>
+            <restrict><type base="boolean"/></restrict>
+          </type>
+        </return>
+      </type>
+    </overloads>
+  </type>`;
+  const md = xmlToMarkdown(xml, "usexpath-abc");
+  assert.match(md, /A React hook which runs an XPath expression\./);
+  assert.match(md, /## Parameters/);
+  assert.match(md, /### `expression`/);
+  assert.match(md, /\*\*Type:\*\* `XPathQuery \| null`/);
+  assert.match(md, /The XPath expression to evaluate\./);
+  assert.match(md, /### `options`/);
+  assert.match(md, /\*Optional\*/);
+  assert.match(md, /## Overloads/);
+  assert.match(md, /Returns `string`/);
+  assert.match(md, /Returns `boolean`/);
+});
+
 test("API page: source element rendered as source file line", () => {
   const xml = `<type>
     <name>FxButton</name>
