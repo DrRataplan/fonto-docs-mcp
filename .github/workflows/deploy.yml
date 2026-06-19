@@ -11,7 +11,7 @@ jobs:
     permissions: {}
 
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - uses: actions/setup-node@v6
         with:
           node-version: latest
@@ -25,7 +25,7 @@ jobs:
     permissions: {}
 
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
 
       - name: Build image
         run: docker build -t fonto-docs-smoke .
@@ -46,7 +46,7 @@ jobs:
       id-token: write  # GCP Workload Identity Federation
 
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
 
       - name: Authenticate to Google Cloud
         uses: google-github-actions/auth@v3
@@ -105,7 +105,7 @@ jobs:
       contents: read
 
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 0
 
@@ -135,7 +135,7 @@ jobs:
       id-token: write        # npm OIDC token exchange
 
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 0  # semantic-release needs full git history
 
