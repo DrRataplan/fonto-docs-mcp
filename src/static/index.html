@@ -4,12 +4,12 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Fonto Docs MCP — Fonto documentation for AI tools</title>
-<meta name="description" content="An MCP server that makes Fonto documentation readable by AI tools like Claude, Cursor, and Claude Code. Search, browse, and fetch live docs via MCP or plain HTTP.">
+<meta name="description" content="An MCP server that makes Fonto XML Editor documentation readable by AI tools like Claude, Cursor, and Claude Code. Search, browse, and fetch live Fonto docs via MCP or plain HTTP.">
 <link rel="canonical" href="https://fonto-docs.elliat.nl/">
 <meta property="og:type" content="website">
 <meta property="og:url" content="https://fonto-docs.elliat.nl/">
 <meta property="og:title" content="Fonto Docs MCP — Fonto documentation for AI tools">
-<meta property="og:description" content="An MCP server that makes Fonto documentation readable by AI tools like Claude, Cursor, and Claude Code. Search, browse, and fetch live docs via MCP or plain HTTP.">
+<meta property="og:description" content="An MCP server that makes Fonto XML Editor documentation readable by AI tools like Claude, Cursor, and Claude Code. Search, browse, and fetch live Fonto docs via MCP or plain HTTP.">
 <meta property="og:site_name" content="Fonto Docs MCP">
 <meta property="og:image" content="https://fonto-docs.elliat.nl/og-image.png">
 <meta property="og:image:type" content="image/png">
@@ -18,7 +18,7 @@
 <meta property="og:image:alt" content="fonto-docs-mcp — Fonto documentation for AI tools">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="Fonto Docs MCP — Fonto documentation for AI tools">
-<meta name="twitter:description" content="An MCP server that makes Fonto documentation readable by AI tools like Claude, Cursor, and Claude Code.">
+<meta name="twitter:description" content="An MCP server that makes Fonto XML Editor documentation readable by AI tools like Claude, Cursor, and Claude Code.">
 <meta name="twitter:image" content="https://fonto-docs.elliat.nl/og-image.png">
 <meta name="msvalidate.01" content="95F42108B405F58439C50B0A4D02D2A0">
 <link rel="icon" type="image/svg+xml" href="/favicon.svg">
@@ -31,7 +31,7 @@
   "applicationCategory": "DeveloperApplication",
   "operatingSystem": "Any",
   "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" },
-  "description": "An MCP server that makes Fonto documentation readable by AI tools. Fetches the underlying DITA XML and converts it to Markdown on demand.",
+  "description": "An MCP server that makes Fonto XML Editor documentation readable by AI tools. Fetches the underlying DITA XML and converts it to Markdown on demand.",
   "codeRepository": "https://github.com/DrRataplan/fonto-docs-mcp",
   "license": "https://opensource.org/licenses/MIT"
 }
@@ -58,17 +58,51 @@
   .endpoint { display: flex; align-items: baseline; gap: 10px; margin: 10px 0; }
   .endpoint code { font-size: 0.9em; }
   .endpoint span { font-size: 0.8em; color: #666; }
+  .examples { margin: 1em 0; padding: 0; list-style: none; }
+  .examples li { padding: 6px 0; color: #444; border-bottom: 1px solid #f0f0f0; font-size: 0.95em; }
+  .examples li:last-child { border-bottom: none; }
+  .examples em { color: #333; font-style: italic; }
 </style>
 </head>
 <body>
 
 <h1>Fonto Docs MCP</h1>
-<p>An MCP server and HTTP API that makes <a href="https://documentation.fontoxml.com/">Fonto documentation</a> readable by AI tools. The docs are a JavaScript SPA — this server fetches the underlying XML and converts it to clean Markdown on demand.</p>
+<p>An MCP server and HTTP API that makes <a href="https://documentation.fontoxml.com/">Fonto XML Editor documentation</a> readable by AI tools. The Fonto docs site is a JavaScript single-page application — this server fetches the underlying DITA XML files directly and converts them to clean Markdown on demand, so AI assistants like Claude, Cursor, and GitHub Copilot can actually read them.</p>
+
+<h2>What is Fonto?</h2>
+<p><a href="https://www.fontoxml.com/">Fonto XML Editor</a> is an enterprise structured-content authoring platform. Organizations that produce large volumes of technical documentation — manuals, specifications, regulated content — use Fonto to author in DITA or custom XML schemas inside a browser-based editor. Fonto developers write TypeScript integrations and XQuery operations to configure the editing experience, data connectors, custom toolbars, and document validation rules.</p>
+<p>The Fonto documentation covers around 2,000 pages across guides, API references, upgrade notes, and generated API docs for every built-in function and component. It is detailed and essential when building or maintaining a Fonto integration.</p>
+
+<h2>The problem this solves</h2>
+<p>The Fonto documentation site is a JavaScript SPA. AI coding tools cannot run JavaScript, so when you paste a Fonto docs URL into Claude or Copilot, the model sees an empty shell — none of the actual content loads. The only workaround was manually copying text from the browser, which breaks any kind of AI-assisted workflow.</p>
+<p>This MCP server fetches the XML source files that back the documentation site and converts them to Markdown in real time. The AI tool can search for a topic, retrieve the full content of any page, or browse the complete catalog — without you leaving your editor.</p>
+
+<h2>Who is this for?</h2>
+<p>This tool is useful for anyone working with the Fonto platform:</p>
+<ul>
+  <li><strong>Fonto integration developers</strong> building or extending a Fonto-based editor in TypeScript or XQuery — look up APIs, check configuration options, and understand upgrade breaking changes without switching context.</li>
+  <li><strong>Content architects</strong> configuring schemas, validation rules, and document templates inside Fonto — quickly find the right configuration property or concept page.</li>
+  <li><strong>Teams upgrading Fonto</strong> — the upgrade section spans over 260 pages of migration notes; AI assistance makes this manageable.</li>
+</ul>
+
+<h2>What you can ask your AI</h2>
+<p>Once connected, you can ask your AI assistant questions like:</p>
+<ul class="examples">
+  <li><em>"How does <code>addDocumentChangeCallback</code> work in Fonto?"</em></li>
+  <li><em>"Search the Fonto docs for documentsManager"</em></li>
+  <li><em>"What are the breaking changes when upgrading from Fonto 8.16 to 8.17?"</em></li>
+  <li><em>"List all pages in the configure section"</em></li>
+  <li><em>"Show me the API reference for <code>evaluateXPathToString</code>"</em></li>
+  <li><em>"What upgrade guides are available for Fonto?"</em></li>
+  <li><em>"My custom operation is still enabled on a locked document — is that a Fonto bug or intentional? Walk me through the design decision."</em></li>
+</ul>
+<p>The AI searches, retrieves, and reads the live Fonto documentation, then answers in the context of your actual codebase.</p>
 
 <h2>Connect your AI tool</h2>
+<p>The server is already running at <code>https://fonto-docs.elliat.nl/mcp</code> — no installation needed.</p>
 <p><strong>Claude Code:</strong></p>
 <pre>claude mcp add --transport http fonto-docs https://fonto-docs.elliat.nl/mcp</pre>
-<p><strong>Cursor / Claude Desktop</strong> — add to <code>mcp.json</code>:</p>
+<p><strong>Cursor / Claude Desktop / VS Code</strong> — add to <code>mcp.json</code>:</p>
 <pre>{
   "mcpServers": {
     "fonto-docs": { "type": "http", "url": "https://fonto-docs.elliat.nl/mcp" }
@@ -83,6 +117,9 @@
   <div class="tool"><code>fonto://catalog</code> &amp; <code>fonto://page/{slug}</code><p>MCP resources: browse the full catalog or address any page directly.</p></div>
 </div>
 
+<h2>How it works</h2>
+<p>The Fonto documentation site stores its content as XML files at predictable paths under <code>/static/xml/latest/</code>. This server fetches those files directly, parses them with <a href="https://github.com/nicktindall/slimdom">slimdom</a> and <a href="https://github.com/FontoXML/fontoxpath">fontoxpath</a>, and converts them to Markdown. Fonto uses two XML formats — DITA-structured guide pages and a custom API reference format — and the conversion handles both. Page content is cached in-process for 10 minutes to absorb repeated lookups in the same session.</p>
+
 <h2>Documentation sections</h2>
 <p>Browse the full catalog filtered by section:</p>
 <div class="sections">
@@ -90,15 +127,16 @@
 </div>
 
 <h2>HTTP API</h2>
+<p>The same data is available over plain HTTP, without MCP:</p>
 <div class="endpoint"><span class="badge">GET</span><code>/search?q={query}</code><span>Search pages — returns JSON — <a href="/search?q=documentsManager">example</a></span></div>
 <div class="endpoint"><span class="badge">GET</span><code>/page/{slug}</code><span>Fetch a page as Markdown — <a href="/page/documentsmanager-f746b3a48442">example</a></span></div>
 <div class="endpoint"><span class="badge">GET</span><code>/catalog</code><span>Full page hierarchy as Markdown — <a href="/catalog">browse</a> or <a href="/catalog?section=configure">filter by section</a></span></div>
 
 <h2>Related tools</h2>
-<p><a href="https://github.com/DrRataplan/xq-lsp">xq-lsp</a> — XQuery language server with support for Fonto-specific libraries and <code>fonto:</code> functions. Pairs well with this MCP for AI-assisted Fonto development.</p>
+<p><a href="https://github.com/DrRataplan/xq-lsp">xq-lsp</a> — XQuery language server with autocomplete and language intelligence for Fonto's XQuery layer, including <code>fonto:</code> built-in functions. Pairs well with this MCP server for AI-assisted Fonto development.</p>
 
 <h2>Source</h2>
-<p><a href="https://github.com/DrRataplan/fonto-docs-mcp">github.com/DrRataplan/fonto-docs-mcp</a> — MIT license</p>
+<p><a href="https://github.com/DrRataplan/fonto-docs-mcp">github.com/DrRataplan/fonto-docs-mcp</a> — MIT license. Also available on <a href="https://www.npmjs.com/package/fonto-docs-mcp">npm</a> for self-hosting.</p>
 <p>Built by <a href="https://elliat.nl/">elliat.nl</a></p>
 
 </body>
