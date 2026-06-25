@@ -85,22 +85,29 @@ function renderTypeNode(typeNode) {
   return str("name", typeNode) || str("@base", typeNode) || "";
 }
 
-function renderTypeFromRestrict(restrictNode) {
-  // Generic: <restrict type="generic"><type>Array</type><type>T</type></restrict>
-  const genericRestrict = nodes("restrict[@type='generic']", restrictNode)[0];
-  if (genericRestrict) {
-    const parts = nodes("type", genericRestrict).map(t => str("name", t) || str("@base", t)).filter(Boolean);
+// Renders a single type descriptor node (either a <type> or a <restrict type="..."> element).
+function renderTypeChild(node) {
+  if (node.localName === "type") return renderTypeNode(node);
+  const rt = str("@type", node);
+  if (rt === "union") {
+    return nodes("type | restrict", node).map(c => renderTypeChild(c)).filter(Boolean).join(" | ");
+  }
+  if (rt === "generic") {
+    const parts = nodes("type | restrict", node).map(c => renderTypeChild(c)).filter(Boolean);
     return parts.length >= 2 ? `${parts[0]}<${parts.slice(1).join(", ")}>` : parts.join("");
   }
-  // Union: <restrict type="union"><type/><type/>...</restrict>
-  const unionRestrict = nodes("restrict[@type='union']", restrictNode)[0];
-  if (unionRestrict) {
-    return nodes("type", unionRestrict).map(t => renderTypeNode(t)).join(" | ");
+  if (rt === "function") {
+    const retChildren = nodes("type | restrict", node);
+    const retTypeStr = retChildren.length ? renderTypeChild(retChildren[0]) : "void";
+    return `() => ${retTypeStr}`;
   }
-  // Simple: <type base="..."/> or <type><name>...</name></type> with optional <value> children
-  const simpleType = nodes("type", restrictNode)[0];
-  if (simpleType) return renderTypeNode(simpleType);
   return "";
+}
+
+function renderTypeFromRestrict(restrictNode) {
+  const inner = nodes("restrict | type", restrictNode)[0];
+  if (!inner) return "";
+  return renderTypeChild(inner);
 }
 
 function renderApiPage(root, slug) {
@@ -211,17 +218,19 @@ function renderApiPage(root, slug) {
       lines.push("**Parameters:**");
       for (const arg of args) {
         const argName = str("name", arg);
-        const argBase = str("restrict/type/@base | restrict/restrict/type/@base", arg);
-        lines.push(`- \`${argName}\`${argBase ? `: \`${argBase}\`` : ""}`);
+        const argRestrictNode = nodes("restrict", arg)[0];
+        const typeStr = argRestrictNode ? renderTypeFromRestrict(argRestrictNode) : "";
+        lines.push(`- \`${argName}\`${typeStr ? `: \`${typeStr}\`` : ""}`);
       }
     }
 
     // Return type
-    const retBase = str("return/type/restrict/type/@base | return/type/@base", member);
+    const retRestrictNode = nodes("return/type/restrict", member)[0];
+    const retTypeStr = retRestrictNode ? renderTypeFromRestrict(retRestrictNode) : "";
     const retDesc = str("return/type/description/paragraph[1]", member);
-    if (retBase || retDesc) {
+    if (retTypeStr || retDesc) {
       lines.push("");
-      if (retBase) lines.push(`**Returns:** \`${retBase}\`${retDesc ? ` — ${retDesc.trim()}` : ""}`);
+      if (retTypeStr) lines.push(`**Returns:** \`${retTypeStr}\`${retDesc ? ` — ${retDesc.trim()}` : ""}`);
       else if (retDesc) lines.push(`**Returns:** ${retDesc.trim()}`);
     }
 
