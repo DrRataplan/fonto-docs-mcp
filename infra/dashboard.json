@@ -1,6 +1,5 @@
 {
   "displayName": "Fonto Docs MCP",
-  "etag": "ecc94e1cfab22aa1408ab7029c4ce263",
   "mosaicLayout": {
     "columns": 12,
     "tiles": [
@@ -82,7 +81,7 @@
         "width": 6,
         "height": 4,
         "widget": {
-          "title": "MCP tool calls per minute",
+          "title": "MCP activity per minute",
           "xyChart": {
             "dataSets": [
               {
@@ -139,9 +138,9 @@
         "width": 6,
         "height": 4,
         "widget": {
-          "title": "Recent MCP tool call logs",
+          "title": "Recent MCP activity logs",
           "logsPanel": {
-            "filter": "resource.type=\"cloud_run_revision\" resource.labels.service_name=\"fonto-docs-mcp\" jsonPayload.type=\"mcp_tool_call\"",
+            "filter": "resource.type=\"cloud_run_revision\" resource.labels.service_name=\"fonto-docs-mcp\" jsonPayload.type=~\"mcp_tool_call|mcp_resource_read\"",
             "resourceNames": ["projects/fonto-docs-mcp"]
           }
         }
