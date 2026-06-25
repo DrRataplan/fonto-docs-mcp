@@ -101,6 +101,8 @@ const server = createServer(async (req, res) => {
     const logMcp = (req) => {
       if (req.method === "tools/call")
         logEvent({ type: "mcp_tool_call", tool: req.params?.name, args: req.params?.arguments });
+      if (req.method === "resources/read")
+        logEvent({ type: "mcp_resource_read", uri: req.params?.uri });
     };
     const logMcpError = (req, res) => {
       if (req.method === "tools/call" && res?.result?.isError)
