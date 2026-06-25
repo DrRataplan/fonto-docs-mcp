@@ -216,6 +216,61 @@ test("API page: generic type prop renders as Array<T>", () => {
   assert.match(md, /\*\*Type:\*\* `Array<FxItem>`/);
 });
 
+test("API page: callback parameter renders as () => void, not plain void", () => {
+  const xml = `<type>
+    <name>DocumentsManager</name>
+    <members>
+      <type>
+        <name>addDocumentChangeCallback</name>
+        <restrict><type base="function"/></restrict>
+        <arguments>
+          <type><name>documentId</name><restrict><type><name>DocumentId</name></type></restrict></type>
+          <type><name>callback</name><restrict><restrict type="function"><type base="void"/></restrict></restrict></type>
+        </arguments>
+        <return>
+          <type>
+            <restrict><restrict type="function"><type base="void"/></restrict></restrict>
+            <description><paragraph>call to remove the callback</paragraph></description>
+          </type>
+        </return>
+      </type>
+    </members>
+  </type>`;
+  const md = xmlToMarkdown(xml, "documentsmanager-abc");
+  assert.match(md, /- `callback`: `\(\) => void`/);
+  assert.match(md, /\*\*Returns:\*\* `\(\) => void` — call to remove the callback/);
+});
+
+test("API page: callback parameter with complex return type renders as () => Promise<...>", () => {
+  const xml = `<type>
+    <name>Foo</name>
+    <members>
+      <type>
+        <name>addPreventCallback</name>
+        <restrict><type base="function"/></restrict>
+        <arguments>
+          <type>
+            <name>callback</name>
+            <restrict>
+              <restrict type="function">
+                <restrict type="generic">
+                  <type><name>Promise</name></type>
+                  <restrict type="union">
+                    <type base="undefined"/>
+                    <type base="void"/>
+                  </restrict>
+                </restrict>
+              </restrict>
+            </restrict>
+          </type>
+        </arguments>
+      </type>
+    </members>
+  </type>`;
+  const md = xmlToMarkdown(xml, "foo-abc");
+  assert.match(md, /- `callback`: `\(\) => Promise<undefined \| void>`/);
+});
+
 test("API page: related pages deduplication", () => {
   const xml = `<type>
     <name>MyApi</name>
