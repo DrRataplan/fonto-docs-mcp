@@ -9,7 +9,7 @@ const {
 
 const BASE = "https://documentation.fontoxml.com";
 const HEADERS = {
-  "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
+  "User-Agent": "fonto-docs-mcp/0.1.0 (+https://fonto-docs.elliat.nl/)",
   "Referer": BASE + "/",
   "Accept": "application/xml,text/xml,*/*",
 };
