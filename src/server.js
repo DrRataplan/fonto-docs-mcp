@@ -62,10 +62,21 @@ function svg(res, data) {
   res.end(data);
 }
 
+const MAX_BODY = 1 * 1024 * 1024; // 1 MB
+
 async function readBody(req) {
   return new Promise((resolve, reject) => {
     const chunks = [];
-    req.on("data", (c) => chunks.push(c));
+    let total = 0;
+    req.on("data", (c) => {
+      total += c.length;
+      if (total > MAX_BODY) {
+        req.destroy();
+        reject(Object.assign(new Error("Request body too large"), { status: 413 }));
+        return;
+      }
+      chunks.push(c);
+    });
     req.on("end", () => resolve(Buffer.concat(chunks).toString()));
     req.on("error", reject);
   });
@@ -95,8 +106,10 @@ const server = createServer(async (req, res) => {
     let body;
     try {
       body = JSON.parse(await readBody(req));
-    } catch {
-      return json(res, { jsonrpc: "2.0", id: null, error: { code: -32700, message: "Parse error" } }, 400);
+    } catch (err) {
+      const status = err.status ?? 400;
+      const message = status === 413 ? "Request body too large" : "Parse error";
+      return json(res, { jsonrpc: "2.0", id: null, error: { code: -32700, message } }, status);
     }
     const logMcp = (req) => {
       if (req.method === "tools/call")

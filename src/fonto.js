@@ -361,8 +361,10 @@ export function xmlToMarkdown(xml, slug) {
 
 let catalogCache = null;
 
+const FETCH_TIMEOUT = 15_000;
+
 async function buildCatalog() {
-  const res = await fetch(`${BASE}/api/search/latest?q=&all=true`, { headers: HEADERS });
+  const res = await fetch(`${BASE}/api/search/latest?q=&all=true`, { headers: HEADERS, signal: AbortSignal.timeout(FETCH_TIMEOUT) });
   if (!res.ok) throw new Error(`Failed to fetch catalog: ${res.status}`);
   const data = await res.json();
   return (data.results || [])
@@ -400,7 +402,7 @@ const SEARCH_API = `${BASE}/api/search/latest`;
 
 export async function searchDocs(query) {
   const url = `${SEARCH_API}?q=${encodeURIComponent(query)}`;
-  const res = await fetch(url, { headers: HEADERS });
+  const res = await fetch(url, { headers: HEADERS, signal: AbortSignal.timeout(FETCH_TIMEOUT) });
   if (!res.ok) throw new Error(`Search failed: ${res.status}`);
   const data = await res.json();
   return (data.results || []).slice(0, 20).map(r => ({
@@ -424,7 +426,7 @@ export async function fetchPage(slug) {
   if (cached && cached.expiresAt > Date.now()) return cached.markdown;
 
   const xmlUrl = `${BASE}/static/xml/latest/${clean}.xml`;
-  const res = await fetch(xmlUrl, { headers: HEADERS });
+  const res = await fetch(xmlUrl, { headers: HEADERS, signal: AbortSignal.timeout(FETCH_TIMEOUT) });
   if (!res.ok) throw new Error(`Could not fetch "${slug}" (HTTP ${res.status}). Try searching first to find the correct slug.`);
   const markdown = xmlToMarkdown(await res.text(), slug);
 
