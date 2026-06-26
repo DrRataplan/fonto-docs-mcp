@@ -271,6 +271,25 @@ test("API page: callback parameter with complex return type renders as () => Pro
   assert.match(md, /- `callback`: `\(\) => Promise<undefined \| void>`/);
 });
 
+test("API page: singleton instance page shows class name note", () => {
+  const xml = `<type>
+    <name>documentsManager</name>
+    <source export="default">fontoxml-documents/src/documentsManager.ts</source>
+    <restrict>
+      <type reference="/latest/documentsmanager-f746b3a48442">
+        <name>DocumentsManager</name>
+      </type>
+    </restrict>
+    <description>
+      <paragraph>The documents manager manages the set of loaded documents.</paragraph>
+    </description>
+  </type>`;
+  const md = xmlToMarkdown(xml, "documentsmanager-49068070d10f");
+  assert.match(md, /## documentsManager/);
+  assert.match(md, /Instance of `DocumentsManager`/);
+  assert.match(md, /The documents manager manages/);
+});
+
 test("API page: related pages deduplication", () => {
   const xml = `<type>
     <name>MyApi</name>

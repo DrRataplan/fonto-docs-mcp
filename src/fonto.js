@@ -125,6 +125,15 @@ function renderApiPage(root, slug) {
   const rootDesc = nodes("description", root)[0];
   if (rootDesc) renderDescriptionInto(rootDesc, lines);
 
+  // Singleton/instance page: no callable content, restrict points to a named class type.
+  // fetchPage will embed the class page below; add a header note for clarity.
+  const hasContent = nodes("members/type | overloads/type | arguments/type", root).length > 0;
+  const className = str("restrict/type/name", root);
+  if (!hasContent && className) {
+    lines.push(`*Instance of \`${className}\` — full API documentation is included below.*`);
+    lines.push("");
+  }
+
   // Overloaded function/hook: description + parameters from first overload, return type variants listed
   const overloads = nodes("overloads/type", root);
   if (overloads.length) {
@@ -426,7 +435,26 @@ export async function fetchPage(slug) {
   const xmlUrl = `${BASE}/static/xml/latest/${clean}.xml`;
   const res = await fetch(xmlUrl, { headers: HEADERS });
   if (!res.ok) throw new Error(`Could not fetch "${slug}" (HTTP ${res.status}). Try searching first to find the correct slug.`);
-  const markdown = xmlToMarkdown(await res.text(), slug);
+  const xml = await res.text();
+  let markdown = xmlToMarkdown(xml, slug);
+
+  // For singleton/instance pages (no callable content, restrict references a named class type),
+  // embed the class page so the AI gets full method docs without a second round-trip.
+  const doc = parseXmlDocument(xml);
+  const root = doc.documentElement;
+  if (root.localName === "type") {
+    const hasContent = nodes("members/type | overloads/type | arguments/type", root).length > 0;
+    const classRef = str("restrict/type/@reference", root);
+    if (!hasContent && classRef) {
+      const classSlug = classRef.replace(/^\/latest\//, "");
+      try {
+        const classMarkdown = await fetchPage(classSlug);
+        markdown += "\n\n---\n\n" + classMarkdown;
+      } catch {
+        // Best-effort; leave the instance page as-is if the class fetch fails
+      }
+    }
+  }
 
   if (pageCache.size >= 200) {
     const now = Date.now();
