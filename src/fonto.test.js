@@ -271,6 +271,52 @@ test("API page: callback parameter with complex return type renders as () => Pro
   assert.match(md, /- `callback`: `\(\) => Promise<undefined \| void>`/);
 });
 
+test("API page: type-literal member with sub-members renders as inline object type", () => {
+  const xml = `<type>
+    <name>XPathObserverOptions</name>
+    <members>
+      <type>
+        <name>variables</name>
+        <restrict optional="true">
+          <type base="type-literal"/>
+        </restrict>
+        <description>
+          <paragraph>Extra variables for the XPath.</paragraph>
+        </description>
+        <members>
+          <type>
+            <name>[s: string]</name>
+            <restrict>
+              <type><name>XQConvertibleValue</name></type>
+            </restrict>
+          </type>
+        </members>
+      </type>
+    </members>
+  </type>`;
+  const md = xmlToMarkdown(xml, "xpathobserveroptions-abc");
+  assert.match(md, /### `variables`/);
+  assert.match(md, /\*\*Type:\*\* `\{ \[s: string\]: XQConvertibleValue \}`/);
+  assert.match(md, /Extra variables for the XPath\./);
+  assert.doesNotMatch(md, /\*type-literal\*/);
+});
+
+test("API page: type-literal member without sub-members still shows type label", () => {
+  const xml = `<type>
+    <name>Foo</name>
+    <members>
+      <type>
+        <name>data</name>
+        <restrict>
+          <type base="type-literal"/>
+        </restrict>
+      </type>
+    </members>
+  </type>`;
+  const md = xmlToMarkdown(xml, "foo-abc");
+  assert.match(md, /\*type-literal\*/);
+});
+
 test("API page: related pages deduplication", () => {
   const xml = `<type>
     <name>MyApi</name>

@@ -205,7 +205,20 @@ function renderApiPage(root, slug) {
 
     // Type/kind from restrict
     const base = str("restrict/type/@base", member);
-    if (base) lines.push(`*${base}*`);
+    const subMembers = nodes("members/type", member);
+    if (base === "type-literal" && subMembers.length) {
+      // Render inline object type signature instead of bare "type-literal"
+      const props = subMembers.map(sm => {
+        const smName = str("name", sm);
+        const smRestrict = nodes("restrict", sm)[0];
+        const smType = smRestrict ? renderTypeFromRestrict(smRestrict) : "unknown";
+        return `${smName}: ${smType}`;
+      });
+      lines.push(`**Type:** \`{ ${props.join("; ")} }\``);
+      lines.push("");
+    } else if (base) {
+      lines.push(`*${base}*`);
+    }
 
     // Referenced type name (e.g. extends Notifier)
     const refType = str("restrict/type/name", member);
