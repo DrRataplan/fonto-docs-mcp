@@ -73,7 +73,7 @@ jobs:
             --image="europe-west4-docker.pkg.dev/fonto-docs-mcp/fonto-docs/server:${{ github.sha }}" \
             --region=europe-west4 \
             --project=fonto-docs-mcp \
-            --startup-probe=httpGet.path=/health,initialDelaySeconds=0,periodSeconds=10,failureThreshold=3,timeoutSeconds=5 \
+            --startup-probe=httpGet.path=/health,initialDelaySeconds=0,periodSeconds=2,failureThreshold=3,timeoutSeconds=1 \
             --quiet
 
   notify-smithery:
