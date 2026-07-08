@@ -140,7 +140,8 @@ const server = createServer(async (req, res) => {
       logEvent({ type: "http_page", slug });
       return text(res, await fetchPage(slug));
     } catch (err) {
-      return json(res, { error: err.message }, 500);
+      const status = /\(HTTP 404\)/.test(err.message) ? 404 : 500;
+      return json(res, { error: err.message }, status);
     }
   }
 
