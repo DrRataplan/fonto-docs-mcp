@@ -72,6 +72,36 @@ async function readBody(req) {
 }
 
 // ---------------------------------------------------------------------------
+// Per-IP rate limiting. In-memory and per-instance, so under Cloud Run
+// autoscaling the effective ceiling is up to (limit * instance count) — that's
+// fine here, the goal is to blunt a single runaway client, not to enforce an
+// exact global quota.
+
+const RATE_LIMIT_WINDOW_MS = 60_000;
+const RATE_LIMIT_MAX = 60;
+const rateLimitBuckets = new Map(); // ip -> { count, resetAt }
+
+function clientIp(req) {
+  const xff = req.headers["x-forwarded-for"];
+  if (xff) return xff.split(",")[0].trim();
+  return req.socket.remoteAddress;
+}
+
+function isRateLimited(ip) {
+  const now = Date.now();
+  const bucket = rateLimitBuckets.get(ip);
+  if (!bucket || bucket.resetAt <= now) {
+    rateLimitBuckets.set(ip, { count: 1, resetAt: now + RATE_LIMIT_WINDOW_MS });
+    return false;
+  }
+  bucket.count += 1;
+  if (rateLimitBuckets.size >= 1000) {
+    for (const [k, v] of rateLimitBuckets) if (v.resetAt <= now) rateLimitBuckets.delete(k);
+  }
+  return bucket.count > RATE_LIMIT_MAX;
+}
+
+// ---------------------------------------------------------------------------
 
 const server = createServer(async (req, res) => {
   const url = new URL(req.url, `http://localhost`);
@@ -84,6 +114,12 @@ const server = createServer(async (req, res) => {
       "Access-Control-Allow-Headers": "Content-Type",
     });
     return res.end();
+  }
+
+  // Never rate-limit /health — Cloud Run's startup probe hits it every 2s.
+  if (url.pathname !== "/health" && isRateLimited(clientIp(req))) {
+    res.setHeader("Retry-After", "60");
+    return json(res, { error: "Too many requests" }, 429);
   }
 
   // ── MCP ────────────────────────────────────────────────────────────────
