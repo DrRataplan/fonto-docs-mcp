@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Privacy Policy — Fonto Docs MCP</title>
+<meta name="description" content="Privacy policy for the Fonto Docs MCP server: what data is collected, why, and how it's used.">
+<link rel="canonical" href="https://fonto-docs.elliat.nl/privacy">
+<link rel="icon" type="image/svg+xml" href="/favicon.svg">
+<style>
+  *, *::before, *::after { box-sizing: border-box; }
+  body { font-family: system-ui, sans-serif; max-width: 800px; margin: 0 auto; padding: 48px 24px 80px; color: #1a1a1a; line-height: 1.6; }
+  h1 { font-size: 2rem; margin-bottom: 0.25em; }
+  h2 { font-size: 1.2rem; margin-top: 2em; border-bottom: 1px solid #e5e5e5; padding-bottom: 0.4em; }
+  p, li { margin: 0.6em 0 1em; color: #444; }
+  code { background: #f4f4f4; border-radius: 5px; padding: 2px 6px; font-size: 0.88em; }
+  a { color: #0055cc; }
+  .updated { color: #888; font-size: 0.9em; }
+</style>
+</head>
+<body>
+
+<h1>Privacy Policy</h1>
+<p class="updated">Last updated: 2026-07-24</p>
+
+<p>Fonto Docs MCP (<code>fonto-docs.elliat.nl</code>) is a server that fetches Fonto's public documentation and converts it to Markdown for AI tools. It does not require an account, does not use cookies, and does not run any analytics or advertising trackers.</p>
+
+<h2>What is collected</h2>
+<ul>
+  <li><strong>Request logs.</strong> Every MCP tool call and HTTP API request (<code>/search</code>, <code>/page/</code>, <code>/catalog</code>) is logged, including the tool name and the arguments you sent — for example, your search query, page slug, or keyword. These logs go to Google Cloud Logging because the server is hosted on Google Cloud Run.</li>
+  <li><strong>IP addresses.</strong> Your IP address is held briefly in memory to apply a per-instance rate limit (60 requests/minute), then discarded — it is not written to the application logs above. Separately, Google Cloud Run automatically records standard infrastructure request logs (IP address, timestamp, path, status code, user agent) for every request to any Cloud Run service; this is a Google Cloud platform default, not something this application adds or can opt out of.</li>
+  <li><strong>Nothing else.</strong> No names, emails, or other identifiers are collected, because none are ever submitted to the server.</li>
+</ul>
+
+<h2>Why it's collected</h2>
+<p>Request logs exist to debug errors and understand usage patterns (e.g. which tools are called, whether a lookup failed). Rate-limit IP tracking exists solely to blunt a single client from overwhelming the server.</p>
+
+<h2>Third parties</h2>
+<p>To answer a search or page-lookup request, the query, slug, or keyword you provide is forwarded live to <a href="https://documentation.fontoxml.com/">documentation.fontoxml.com</a>, Fonto's own public documentation site and search API, so this server can retrieve and relay the result. Fonto's servers see that request and are subject to Fonto's own privacy practices, not this one.</p>
+<p>No data is sold, shared with advertisers, or used for profiling.</p>
+
+<h2>Retention</h2>
+<p>Logs are retained under Google Cloud Logging's standard retention settings for this project and are not reviewed except to debug reported problems. Nothing is stored in a database; the only in-process caches (page content, 10 minutes; page catalog, process lifetime) hold public documentation content, not user data.</p>
+
+<h2>Contact</h2>
+<p>Questions or requests about this policy: open an issue at <a href="https://github.com/DrRataplan/fonto-docs-mcp">github.com/DrRataplan/fonto-docs-mcp</a> or email <a href="mailto:martin@elliat.nl">martin@elliat.nl</a>.</p>
+
+<p><a href="/">&larr; Back to Fonto Docs MCP</a></p>
+
+</body>
+</html>
