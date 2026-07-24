@@ -12,6 +12,7 @@ const FAVICON_SVG     = readFileSync(join(STATIC, "favicon.svg"), "utf8");
 const OG_IMAGE_SVG    = readFileSync(join(STATIC, "og-image.svg"), "utf8");
 const LLMS_TXT        = readFileSync(join(STATIC, "llms.txt"), "utf8");
 const INDEX_HTML      = readFileSync(join(STATIC, "index.html"), "utf8");
+const PRIVACY_HTML    = readFileSync(join(STATIC, "privacy.html"), "utf8");
 
 let OG_IMAGE_PNG = null;
 try { OG_IMAGE_PNG = readFileSync(join(STATIC, "og-image.png")); } catch {}
@@ -221,7 +222,7 @@ const server = createServer(async (req, res) => {
   if (url.pathname === "/robots.txt")   return text(res, "User-agent: *\nAllow: /\nSitemap: https://fonto-docs.elliat.nl/sitemap.xml\n");
   if (url.pathname === "/sitemap.xml") {
     res.writeHead(200, { "Content-Type": "application/xml; charset=utf-8" });
-    return res.end(`<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n  <url><loc>https://fonto-docs.elliat.nl/</loc><changefreq>weekly</changefreq><priority>1.0</priority></url>\n</urlset>\n`);
+    return res.end(`<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n  <url><loc>https://fonto-docs.elliat.nl/</loc><changefreq>weekly</changefreq><priority>1.0</priority></url>\n  <url><loc>https://fonto-docs.elliat.nl/privacy</loc><changefreq>monthly</changefreq><priority>0.3</priority></url>\n</urlset>\n`);
   }
 
   // ── Smithery / MCP server card ────────────────────────────────────────
@@ -250,6 +251,7 @@ const server = createServer(async (req, res) => {
 
   // ── Landing page ───────────────────────────────────────────────────────
   if (url.pathname === "/" || url.pathname === "") return html(res, LANDING_HTML);
+  if (url.pathname === "/privacy") return html(res, PRIVACY_HTML);
 
   return json(res, { error: "Not found" }, 404);
 });
