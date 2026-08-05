@@ -146,16 +146,22 @@ const server = createServer(async (req, res) => {
         logEvent({ type: "mcp_tool_error", tool: req.params?.name, args: req.params?.arguments, error: res.result.content?.[0]?.text });
     };
     if (Array.isArray(body)) {
+      // JSON-RPC batching only exists for legacy (pre-2026-07-28) clients —
+      // the modern revision requires one request per HTTP POST.
+      if (req.headers["mcp-protocol-version"] !== undefined) {
+        return json(res, { jsonrpc: "2.0", id: null, error: { code: -32600, message: "Batch requests are not supported under MCP-Protocol-Version 2026-07-28" } }, 400);
+      }
       body.forEach(logMcp);
-      const responses = (await Promise.all(body.map(handleMcpRequest))).filter(Boolean);
+      const results = (await Promise.all(body.map((b) => handleMcpRequest(b, req.headers)))).filter(Boolean);
+      const responses = results.map((r) => r.body);
       body.forEach((req, i) => logMcpError(req, responses[i]));
       return json(res, responses);
     }
     logMcp(body);
-    const response = await handleMcpRequest(body);
-    logMcpError(body, response);
-    if (!response) { res.writeHead(202); return res.end(); }
-    return json(res, response);
+    const result = await handleMcpRequest(body, req.headers);
+    logMcpError(body, result?.body);
+    if (!result) { res.writeHead(202); return res.end(); }
+    return json(res, result.body, result.status);
   }
 
   // ── HTTP API ───────────────────────────────────────────────────────────
