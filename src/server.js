@@ -3,7 +3,7 @@ import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { join, dirname } from "node:path";
 import { searchDocs, fetchPage, getCatalog, listPages } from "./fonto.js";
-import { handleMcpRequest, MCP_TOOLS, MCP_RESOURCES, MCP_RESOURCE_TEMPLATES } from "./mcp.js";
+import { handleMcpRequest, isModernRequest, MCP_TOOLS, MCP_RESOURCES, MCP_RESOURCE_TEMPLATES } from "./mcp.js";
 
 const PORT = process.env.PORT ?? 8080;
 const STATIC = join(dirname(fileURLToPath(import.meta.url)), "static");
@@ -160,7 +160,7 @@ const server = createServer(async (req, res) => {
     if (Array.isArray(body)) {
       // JSON-RPC batching only exists for legacy (pre-2026-07-28) clients —
       // the modern revision requires one request per HTTP POST.
-      if (req.headers["mcp-protocol-version"] !== undefined) {
+      if (isModernRequest(req.headers)) {
         return json(res, { jsonrpc: "2.0", id: null, error: { code: -32600, message: "Batch requests are not supported under MCP-Protocol-Version 2026-07-28" } }, 400);
       }
       body.forEach(logMcp);

@@ -605,6 +605,20 @@ test("legacy tools/list carries no modern envelope fields", async () => {
   assert.strictEqual(body.result.ttlMs, undefined);
 });
 
+test("legacy client's post-initialize requests carry MCP-Protocol-Version too, and are still handled as legacy", async () => {
+  // Real 2025-06-18 (and earlier) clients — Claude Desktop, Claude Code,
+  // Cursor — are required to send the MCP-Protocol-Version header on every
+  // request after `initialize`, using the version that was negotiated in
+  // the handshake (this server always negotiates "2025-03-26"). That header
+  // must not be mistaken for the unrelated modern per-request envelope.
+  const headers = { "mcp-protocol-version": "2025-03-26" };
+  const { status, body } = await handleMcpRequest({ jsonrpc: "2.0", id: 1, method: "tools/list" }, headers);
+  assert.strictEqual(status, 200);
+  assert.ok(Array.isArray(body.result.tools));
+  assert.strictEqual(body.result.resultType, undefined);
+  assert.strictEqual(body.error, undefined);
+});
+
 test("modern tools/list is enriched with resultType, cache hints, and serverInfo", async () => {
   const headers = { "mcp-protocol-version": "2026-07-28", "mcp-method": "tools/list" };
   const req = { jsonrpc: "2.0", id: 1, method: "tools/list", params: { _meta: modernMeta() } };

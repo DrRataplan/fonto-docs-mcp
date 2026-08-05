@@ -122,14 +122,41 @@ export const MCP_RESOURCE_TEMPLATES = [
 // clients (every current client — Claude Desktop, Cursor, Claude Code, etc.)
 // while also accepting requests from clients that speak the 2026-07-28
 // "modern" revision, which dropped the handshake in favor of per-request
-// metadata. Era is selected per the spec's dual-era rule: a request carrying
-// the MCP-Protocol-Version header is served statelessly under the modern
-// revision; anything else (including `initialize`) is served under legacy
-// semantics. See https://modelcontextprotocol.io/specification/2026-07-28/basic/versioning.
+// metadata. See https://modelcontextprotocol.io/specification/2026-07-28/basic/versioning.
+//
+// Era selection is NOT simply "the MCP-Protocol-Version header is present":
+// that header name is reused by legacy revision 2025-06-18, which requires
+// clients to send it on every request *after* initialize (with a legacy date
+// value, e.g. "2025-03-26" — whatever this server's `initialize` response
+// negotiated). A legacy client's post-initialize `tools/list` therefore also
+// carries this header, just without the modern `_meta` fields. Treating mere
+// presence as "modern" misroutes that request into strict modern validation
+// and rejects every real-world legacy client (Claude Desktop, Claude Code,
+// Cursor) right after a successful handshake. Era must instead be decided
+// from the header's *value*: legacy clients send a recognized legacy version
+// string; only anything else is a modern (or modern-attempting) request.
 
 const SERVER_INFO = { name: "fonto-docs", version: "0.1.0" };
 const MODERN_PROTOCOL_VERSION = "2026-07-28";
 const SUPPORTED_MODERN_VERSIONS = [MODERN_PROTOCOL_VERSION];
+
+// Every protocol revision prior to the modern 2026-07-28 rewrite used the
+// initialize-handshake ("legacy") model. A header carrying one of these
+// values is a legacy client speaking post-handshake, not a modern request.
+const LEGACY_PROTOCOL_VERSIONS = new Set([
+  "2024-11-05",
+  "2025-03-26",
+  "2025-06-18",
+  "2025-11-25",
+]);
+
+// Whether a request should be handled under modern (2026-07-28+) semantics.
+// Exported so server.js can apply the same rule to JSON-RPC batching, which
+// only exists for legacy clients.
+export function isModernRequest(headers) {
+  const versionHeader = headers["mcp-protocol-version"];
+  return versionHeader !== undefined && !LEGACY_PROTOCOL_VERSIONS.has(versionHeader);
+}
 
 // Tool/resource declarations are static per deploy, so a long TTL is safe.
 // Page content is cached in fonto.js for 10 minutes — mirror that here.
@@ -231,7 +258,7 @@ function serverDiscoverResult(id) {
 
 export async function handleMcpRequest(body, headers = {}) {
   const { method, params, id } = body ?? {};
-  const isModern = headers["mcp-protocol-version"] !== undefined;
+  const isModern = isModernRequest(headers);
 
   if (isModern) {
     const { error } = validateModernRequest(body, headers);
