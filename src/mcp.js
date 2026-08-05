@@ -115,27 +115,158 @@ export const MCP_RESOURCE_TEMPLATES = [
   },
 ];
 
-export async function handleMcpRequest(body) {
-  const { method, params, id } = body;
+// ---------------------------------------------------------------------------
+// Protocol era support.
+//
+// This server is "dual-era": it keeps serving the legacy initialize-handshake
+// clients (every current client — Claude Desktop, Cursor, Claude Code, etc.)
+// while also accepting requests from clients that speak the 2026-07-28
+// "modern" revision, which dropped the handshake in favor of per-request
+// metadata. Era is selected per the spec's dual-era rule: a request carrying
+// the MCP-Protocol-Version header is served statelessly under the modern
+// revision; anything else (including `initialize`) is served under legacy
+// semantics. See https://modelcontextprotocol.io/specification/2026-07-28/basic/versioning.
 
-  if (method === "initialize") {
+const SERVER_INFO = { name: "fonto-docs", version: "0.1.0" };
+const MODERN_PROTOCOL_VERSION = "2026-07-28";
+const SUPPORTED_MODERN_VERSIONS = [MODERN_PROTOCOL_VERSION];
+
+// Tool/resource declarations are static per deploy, so a long TTL is safe.
+// Page content is cached in fonto.js for 10 minutes — mirror that here.
+const TOOLS_LIST_CACHE = { ttlMs: 3_600_000, cacheScope: "public" };
+const RESOURCES_LIST_CACHE = { ttlMs: 3_600_000, cacheScope: "public" };
+const RESOURCE_READ_CACHE = { ttlMs: 600_000, cacheScope: "public" };
+
+const NAME_REQUIRED_METHODS = new Set(["tools/call", "resources/read"]);
+
+function res(body, status = 200) {
+  return { status, body };
+}
+
+// Wraps a successful `result` payload with the fields modern clients expect:
+// resultType, serverInfo identity, and (for cacheable methods) ttlMs/cacheScope.
+function modernResult(id, result, cache) {
+  return res({
+    jsonrpc: "2.0",
+    id,
+    result: {
+      resultType: "complete",
+      ...result,
+      ...(cache ? { ttlMs: cache.ttlMs, cacheScope: cache.cacheScope } : {}),
+      _meta: { ...(result._meta ?? {}), "io.modelcontextprotocol/serverInfo": SERVER_INFO },
+    },
+  });
+}
+
+// Validates the modern per-request envelope (headers + _meta) before any
+// method is dispatched. Returns { error } on failure, or the parsed
+// requestedVersion/clientCapabilities on success.
+function validateModernRequest(body, headers) {
+  const { method, params, id = null } = body ?? {};
+  const versionHeader = headers["mcp-protocol-version"];
+  const meta = params?._meta ?? {};
+  const requestedVersion = meta["io.modelcontextprotocol/protocolVersion"];
+  const clientCapabilities = meta["io.modelcontextprotocol/clientCapabilities"];
+
+  // Per spec, a request missing a required _meta field is malformed
+  // (-32602) — distinct from a header that disagrees with a *present* body
+  // value (-32020, HeaderMismatch). Check for absence first so the two
+  // aren't conflated: `undefined !== headerValue` would otherwise always
+  // read as a mismatch.
+  if (requestedVersion === undefined || clientCapabilities === undefined) {
     return {
+      error: res({
+        jsonrpc: "2.0", id,
+        error: { code: -32602, message: "Missing required _meta field: io.modelcontextprotocol/protocolVersion and io.modelcontextprotocol/clientCapabilities are required on every request" },
+      }, 400),
+    };
+  }
+  if (versionHeader !== requestedVersion) {
+    return {
+      error: res({
+        jsonrpc: "2.0", id,
+        error: { code: -32020, message: `Header mismatch: MCP-Protocol-Version header value '${versionHeader}' does not match body _meta value '${requestedVersion}'` },
+      }, 400),
+    };
+  }
+  if (!SUPPORTED_MODERN_VERSIONS.includes(requestedVersion)) {
+    return {
+      error: res({
+        jsonrpc: "2.0", id,
+        error: { code: -32022, message: "Unsupported protocol version", data: { supported: SUPPORTED_MODERN_VERSIONS, requested: requestedVersion } },
+      }, 400),
+    };
+  }
+  const methodHeader = headers["mcp-method"];
+  if (methodHeader !== method) {
+    return {
+      error: res({
+        jsonrpc: "2.0", id,
+        error: { code: -32020, message: `Header mismatch: Mcp-Method header value '${methodHeader}' does not match body method '${method}'` },
+      }, 400),
+    };
+  }
+  if (NAME_REQUIRED_METHODS.has(method)) {
+    const expectedName = params?.name ?? params?.uri;
+    const nameHeader = headers["mcp-name"];
+    if (nameHeader === undefined || nameHeader !== expectedName) {
+      return {
+        error: res({
+          jsonrpc: "2.0", id,
+          error: { code: -32020, message: `Header mismatch: Mcp-Name header value '${nameHeader}' does not match body value '${expectedName}'` },
+        }, 400),
+      };
+    }
+  }
+  return { requestedVersion, clientCapabilities };
+}
+
+function serverDiscoverResult(id) {
+  return modernResult(id, {
+    supportedVersions: SUPPORTED_MODERN_VERSIONS,
+    capabilities: { tools: {}, resources: { subscribe: false } },
+    instructions: "Search and read Fonto XML documentation, converted to Markdown from the underlying DITA source. Use search_fonto_docs or list_pages to find a page, then get_fonto_page to fetch its content.",
+  }, { ttlMs: TOOLS_LIST_CACHE.ttlMs, cacheScope: "public" });
+}
+
+export async function handleMcpRequest(body, headers = {}) {
+  const { method, params, id } = body ?? {};
+  const isModern = headers["mcp-protocol-version"] !== undefined;
+
+  if (isModern) {
+    const { error } = validateModernRequest(body, headers);
+    if (error) return error;
+  }
+
+  // The initialize/initialized handshake only exists for legacy clients.
+  if (method === "initialize") {
+    if (isModern) return res({ jsonrpc: "2.0", id, error: { code: -32601, message: `Method not found: ${method}` } }, 404);
+    return res({
       jsonrpc: "2.0", id,
       result: {
         protocolVersion: "2025-03-26",
         capabilities: { tools: {}, resources: { subscribe: false } },
-        serverInfo: { name: "fonto-docs", version: "0.1.0" },
+        serverInfo: SERVER_INFO,
       },
-    };
+    });
+  }
+
+  if (method === "server/discover") {
+    if (!isModern) return res({ jsonrpc: "2.0", id, error: { code: -32601, message: `Method not found: ${method}` } });
+    return serverDiscoverResult(id);
   }
 
   if (method === "tools/list") {
-    return { jsonrpc: "2.0", id, result: { tools: MCP_TOOLS } };
+    const result = { tools: MCP_TOOLS };
+    return isModern ? modernResult(id, result, TOOLS_LIST_CACHE) : res({ jsonrpc: "2.0", id, result });
   }
 
   if (method === "tools/call") {
     const { name, arguments: args = {} } = params;
-    const toolError = (msg) => ({ jsonrpc: "2.0", id, result: { content: [{ type: "text", text: msg }], isError: true } });
+    const toolError = (msg) => {
+      const result = { content: [{ type: "text", text: msg }], isError: true };
+      return isModern ? modernResult(id, result) : res({ jsonrpc: "2.0", id, result });
+    };
     try {
       let text;
       let structuredContent;
@@ -163,40 +294,45 @@ export async function handleMcpRequest(body) {
       } else {
         throw new Error(`Unknown tool: ${name}`);
       }
-      return { jsonrpc: "2.0", id, result: { content: [{ type: "text", text }], structuredContent } };
+      const result = { content: [{ type: "text", text }], structuredContent };
+      return isModern ? modernResult(id, result) : res({ jsonrpc: "2.0", id, result });
     } catch (err) {
-      return { jsonrpc: "2.0", id, result: { content: [{ type: "text", text: err.message }], isError: true } };
+      const result = { content: [{ type: "text", text: err.message }], isError: true };
+      return isModern ? modernResult(id, result) : res({ jsonrpc: "2.0", id, result });
     }
   }
 
   if (method === "resources/list") {
-    return { jsonrpc: "2.0", id, result: { resources: MCP_RESOURCES, resourceTemplates: MCP_RESOURCE_TEMPLATES } };
+    const result = { resources: MCP_RESOURCES, resourceTemplates: MCP_RESOURCE_TEMPLATES };
+    return isModern ? modernResult(id, result, RESOURCES_LIST_CACHE) : res({ jsonrpc: "2.0", id, result });
   }
 
   if (method === "resources/read") {
     const { uri } = params;
     try {
+      let text;
       if (uri === "fonto://catalog") {
         const catalog = await getCatalog();
-        const text = catalog.map(p => {
+        text = catalog.map(p => {
           const path = [...p.ancestry, p.title].join(" > ");
           return `${p.slug} — ${path}`;
         }).join("\n");
-        return { jsonrpc: "2.0", id, result: { contents: [{ uri, mimeType: "text/plain", text }] } };
+      } else {
+        const pageMatch = uri.match(/^fonto:\/\/page\/(.+)$/);
+        if (!pageMatch) return res({ jsonrpc: "2.0", id, error: { code: -32602, message: `Unknown resource: ${uri}` } });
+        text = await fetchPage(pageMatch[1]);
       }
-      const pageMatch = uri.match(/^fonto:\/\/page\/(.+)$/);
-      if (pageMatch) {
-        const text = await fetchPage(pageMatch[1]);
-        return { jsonrpc: "2.0", id, result: { contents: [{ uri, mimeType: "text/plain", text }] } };
-      }
-      return { jsonrpc: "2.0", id, error: { code: -32602, message: `Unknown resource: ${uri}` } };
+      const result = { contents: [{ uri, mimeType: "text/plain", text }] };
+      return isModern ? modernResult(id, result, RESOURCE_READ_CACHE) : res({ jsonrpc: "2.0", id, result });
     } catch (err) {
-      return { jsonrpc: "2.0", id, error: { code: -32603, message: err.message } };
+      return res({ jsonrpc: "2.0", id, error: { code: -32603, message: err.message } });
     }
   }
 
   // notifications/initialized and other one-way messages
   if (!id) return null;
 
-  return { jsonrpc: "2.0", id, error: { code: -32601, message: `Method not found: ${method}` } };
+  return isModern
+    ? res({ jsonrpc: "2.0", id, error: { code: -32601, message: `Method not found: ${method}` } }, 404)
+    : res({ jsonrpc: "2.0", id, error: { code: -32601, message: `Method not found: ${method}` } });
 }

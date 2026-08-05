@@ -576,3 +576,130 @@ test("mcp.js exports MCP_RESOURCE_TEMPLATES as a non-empty array", () => {
 test("mcp.js exports handleMcpRequest as a function", () => {
   assert.strictEqual(typeof handleMcpRequest, "function");
 });
+
+// ---------------------------------------------------------------------------
+// mcp.js protocol era handling — legacy initialize handshake vs. the
+// 2026-07-28 "modern" per-request revision (dual-era server)
+// ---------------------------------------------------------------------------
+
+function modernMeta(overrides = {}) {
+  return {
+    "io.modelcontextprotocol/protocolVersion": "2026-07-28",
+    "io.modelcontextprotocol/clientCapabilities": {},
+    ...overrides,
+  };
+}
+
+test("legacy initialize handshake is unaffected", async () => {
+  const { status, body } = await handleMcpRequest({ jsonrpc: "2.0", id: 1, method: "initialize", params: {} });
+  assert.strictEqual(status, 200);
+  assert.strictEqual(body.result.protocolVersion, "2025-03-26");
+  assert.strictEqual(body.result.serverInfo.name, "fonto-docs");
+});
+
+test("legacy tools/list carries no modern envelope fields", async () => {
+  const { status, body } = await handleMcpRequest({ jsonrpc: "2.0", id: 1, method: "tools/list" });
+  assert.strictEqual(status, 200);
+  assert.ok(Array.isArray(body.result.tools));
+  assert.strictEqual(body.result.resultType, undefined);
+  assert.strictEqual(body.result.ttlMs, undefined);
+});
+
+test("modern tools/list is enriched with resultType, cache hints, and serverInfo", async () => {
+  const headers = { "mcp-protocol-version": "2026-07-28", "mcp-method": "tools/list" };
+  const req = { jsonrpc: "2.0", id: 1, method: "tools/list", params: { _meta: modernMeta() } };
+  const { status, body } = await handleMcpRequest(req, headers);
+  assert.strictEqual(status, 200);
+  assert.strictEqual(body.result.resultType, "complete");
+  assert.ok(Array.isArray(body.result.tools));
+  assert.strictEqual(typeof body.result.ttlMs, "number");
+  assert.strictEqual(body.result.cacheScope, "public");
+  assert.strictEqual(body.result._meta["io.modelcontextprotocol/serverInfo"].name, "fonto-docs");
+});
+
+test("modern resources/list is enriched the same way", async () => {
+  const headers = { "mcp-protocol-version": "2026-07-28", "mcp-method": "resources/list" };
+  const req = { jsonrpc: "2.0", id: 1, method: "resources/list", params: { _meta: modernMeta() } };
+  const { status, body } = await handleMcpRequest(req, headers);
+  assert.strictEqual(status, 200);
+  assert.strictEqual(body.result.resultType, "complete");
+  assert.ok(Array.isArray(body.result.resources));
+  assert.ok(Array.isArray(body.result.resourceTemplates));
+});
+
+test("server/discover works for modern clients and is unknown to legacy ones", async () => {
+  const headers = { "mcp-protocol-version": "2026-07-28", "mcp-method": "server/discover" };
+  const req = { jsonrpc: "2.0", id: 1, method: "server/discover", params: { _meta: modernMeta() } };
+  const modern = await handleMcpRequest(req, headers);
+  assert.strictEqual(modern.status, 200);
+  assert.deepStrictEqual(modern.body.result.supportedVersions, ["2026-07-28"]);
+  assert.ok(modern.body.result.capabilities.tools);
+
+  const legacy = await handleMcpRequest({ jsonrpc: "2.0", id: 1, method: "server/discover" });
+  assert.strictEqual(legacy.body.error.code, -32601);
+});
+
+test("initialize is unknown under the modern revision", async () => {
+  const headers = { "mcp-protocol-version": "2026-07-28", "mcp-method": "initialize" };
+  const req = { jsonrpc: "2.0", id: 1, method: "initialize", params: { _meta: modernMeta() } };
+  const { status, body } = await handleMcpRequest(req, headers);
+  assert.strictEqual(status, 404);
+  assert.strictEqual(body.error.code, -32601);
+});
+
+test("modern request missing _meta entirely is a missing-required-field error, not a header mismatch", async () => {
+  const headers = { "mcp-protocol-version": "2026-07-28", "mcp-method": "tools/list" };
+  const { status, body } = await handleMcpRequest({ jsonrpc: "2.0", id: 1, method: "tools/list" }, headers);
+  assert.strictEqual(status, 400);
+  assert.strictEqual(body.error.code, -32602);
+});
+
+test("modern request where the version header disagrees with a present _meta value is a header mismatch", async () => {
+  const headers = { "mcp-protocol-version": "2026-07-28", "mcp-method": "tools/list" };
+  const req = { jsonrpc: "2.0", id: 1, method: "tools/list", params: { _meta: modernMeta({ "io.modelcontextprotocol/protocolVersion": "2025-11-25" }) } };
+  const { status, body } = await handleMcpRequest(req, headers);
+  assert.strictEqual(status, 400);
+  assert.strictEqual(body.error.code, -32020);
+});
+
+test("modern request with an unsupported protocol version lists what's supported", async () => {
+  const headers = { "mcp-protocol-version": "1900-01-01", "mcp-method": "tools/list" };
+  const req = { jsonrpc: "2.0", id: 1, method: "tools/list", params: { _meta: modernMeta({ "io.modelcontextprotocol/protocolVersion": "1900-01-01" }) } };
+  const { status, body } = await handleMcpRequest(req, headers);
+  assert.strictEqual(status, 400);
+  assert.strictEqual(body.error.code, -32022);
+  assert.deepStrictEqual(body.error.data.supported, ["2026-07-28"]);
+});
+
+test("modern request rejects a Mcp-Method header that disagrees with the body", async () => {
+  const headers = { "mcp-protocol-version": "2026-07-28", "mcp-method": "resources/list" };
+  const req = { jsonrpc: "2.0", id: 1, method: "tools/list", params: { _meta: modernMeta() } };
+  const { status, body } = await handleMcpRequest(req, headers);
+  assert.strictEqual(status, 400);
+  assert.strictEqual(body.error.code, -32020);
+});
+
+test("modern tools/call requires a matching Mcp-Name header", async () => {
+  const headers = { "mcp-protocol-version": "2026-07-28", "mcp-method": "tools/call" };
+  const req = { jsonrpc: "2.0", id: 1, method: "tools/call", params: { name: "list_pages", arguments: { keyword: "table" }, _meta: modernMeta() } };
+  const { status, body } = await handleMcpRequest(req, headers);
+  assert.strictEqual(status, 400);
+  assert.strictEqual(body.error.code, -32020);
+});
+
+test("unknown methods are 404 under the modern revision but a plain JSON-RPC error under legacy", async () => {
+  const modern = await handleMcpRequest(
+    { jsonrpc: "2.0", id: 1, method: "not/a/method", params: { _meta: modernMeta() } },
+    { "mcp-protocol-version": "2026-07-28", "mcp-method": "not/a/method" },
+  );
+  assert.strictEqual(modern.status, 404);
+  assert.strictEqual(modern.body.error.code, -32601);
+
+  const legacy = await handleMcpRequest({ jsonrpc: "2.0", id: 1, method: "not/a/method" });
+  assert.strictEqual(legacy.status, 200);
+  assert.strictEqual(legacy.body.error.code, -32601);
+});
+
+test("notifications produce no response in either era", async () => {
+  assert.strictEqual(await handleMcpRequest({ jsonrpc: "2.0", method: "notifications/initialized" }), null);
+});
