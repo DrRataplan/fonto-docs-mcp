@@ -18,7 +18,7 @@
                     "filter": "resource.type=\"cloud_run_revision\" resource.labels.service_name=\"fonto-docs-mcp\" metric.type=\"run.googleapis.com/request_count\"",
                     "aggregation": {
                       "alignmentPeriod": "60s",
-                      "perSeriesAligner": "ALIGN_RATE",
+                      "perSeriesAligner": "ALIGN_DELTA",
                       "crossSeriesReducer": "REDUCE_SUM",
                       "groupByFields": ["metric.labels.response_code_class"]
                     }
@@ -90,7 +90,7 @@
                     "filter": "resource.type=\"cloud_run_revision\" resource.labels.service_name=\"fonto-docs-mcp\" metric.type=\"logging.googleapis.com/user/mcp_tool_calls\"",
                     "aggregation": {
                       "alignmentPeriod": "60s",
-                      "perSeriesAligner": "ALIGN_RATE",
+                      "perSeriesAligner": "ALIGN_DELTA",
                       "crossSeriesReducer": "REDUCE_SUM"
                     }
                   }
@@ -173,7 +173,7 @@
                     "filter": "resource.type=\"cloud_run_revision\" resource.labels.service_name=\"fonto-docs-mcp\" metric.type=\"run.googleapis.com/request_count\"",
                     "aggregation": {
                       "alignmentPeriod": "60s",
-                      "perSeriesAligner": "ALIGN_RATE",
+                      "perSeriesAligner": "ALIGN_DELTA",
                       "crossSeriesReducer": "REDUCE_SUM",
                       "groupByFields": ["metric.labels.response_code_class"]
                     }
