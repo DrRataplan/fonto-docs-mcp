@@ -135,15 +135,27 @@ const server = createServer(async (req, res) => {
     } catch {
       return json(res, { jsonrpc: "2.0", id: null, error: { code: -32700, message: "Parse error" } }, 400);
     }
-    const logMcp = (req) => {
-      if (req.method === "tools/call")
-        logEvent({ type: "mcp_tool_call", tool: req.params?.name, args: req.params?.arguments });
-      if (req.method === "resources/read")
-        logEvent({ type: "mcp_resource_read", uri: req.params?.uri });
+    // The MCP-Protocol-Version header is the literal signal the server itself
+    // uses to pick an era (see isModern in mcp.js) — log that value rather
+    // than a synthetic boolean, so a future second modern version shows up
+    // distinctly instead of collapsing into "modern".
+    const protocolVersion = req.headers["mcp-protocol-version"] ?? "legacy";
+    // Legacy clients report identity once, in `initialize` params; modern
+    // clients report it on every request's `_meta`.
+    const clientIdentity = (msg) =>
+      msg.method === "initialize" ? msg.params?.clientInfo : msg.params?._meta?.["io.modelcontextprotocol/clientInfo"];
+    const logMcp = (msg) => {
+      const client = clientIdentity(msg);
+      if (msg.method === "initialize")
+        logEvent({ type: "mcp_initialize", protocolVersion, client });
+      if (msg.method === "tools/call")
+        logEvent({ type: "mcp_tool_call", protocolVersion, client, tool: msg.params?.name, args: msg.params?.arguments });
+      if (msg.method === "resources/read")
+        logEvent({ type: "mcp_resource_read", protocolVersion, client, uri: msg.params?.uri });
     };
-    const logMcpError = (req, res) => {
-      if (req.method === "tools/call" && res?.result?.isError)
-        logEvent({ type: "mcp_tool_error", tool: req.params?.name, args: req.params?.arguments, error: res.result.content?.[0]?.text });
+    const logMcpError = (msg, res) => {
+      if (msg.method === "tools/call" && res?.result?.isError)
+        logEvent({ type: "mcp_tool_error", protocolVersion, client: clientIdentity(msg), tool: msg.params?.name, args: msg.params?.arguments, error: res.result.content?.[0]?.text });
     };
     if (Array.isArray(body)) {
       // JSON-RPC batching only exists for legacy (pre-2026-07-28) clients —
@@ -154,7 +166,7 @@ const server = createServer(async (req, res) => {
       body.forEach(logMcp);
       const results = (await Promise.all(body.map((b) => handleMcpRequest(b, req.headers)))).filter(Boolean);
       const responses = results.map((r) => r.body);
-      body.forEach((req, i) => logMcpError(req, responses[i]));
+      body.forEach((msg, i) => logMcpError(msg, responses[i]));
       return json(res, responses);
     }
     logMcp(body);
