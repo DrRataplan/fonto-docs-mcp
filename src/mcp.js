@@ -257,7 +257,7 @@ function serverDiscoverResult(id) {
 }
 
 export async function handleMcpRequest(body, headers = {}) {
-  const { method, params, id } = body ?? {};
+  const { method, params = {}, id } = body ?? {};
   const isModern = isModernRequest(headers);
 
   if (isModern) {

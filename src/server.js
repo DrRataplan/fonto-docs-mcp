@@ -157,23 +157,31 @@ const server = createServer(async (req, res) => {
       if (msg.method === "tools/call" && res?.result?.isError)
         logEvent({ type: "mcp_tool_error", protocolVersion, client: clientIdentity(msg), tool: msg.params?.name, args: msg.params?.arguments, error: res.result.content?.[0]?.text });
     };
-    if (Array.isArray(body)) {
-      // JSON-RPC batching only exists for legacy (pre-2026-07-28) clients —
-      // the modern revision requires one request per HTTP POST.
-      if (isModernRequest(req.headers)) {
-        return json(res, { jsonrpc: "2.0", id: null, error: { code: -32600, message: "Batch requests are not supported under MCP-Protocol-Version 2026-07-28" } }, 400);
+    try {
+      if (Array.isArray(body)) {
+        // JSON-RPC batching only exists for legacy (pre-2026-07-28) clients —
+        // the modern revision requires one request per HTTP POST.
+        if (isModernRequest(req.headers)) {
+          return json(res, { jsonrpc: "2.0", id: null, error: { code: -32600, message: "Batch requests are not supported under MCP-Protocol-Version 2026-07-28" } }, 400);
+        }
+        body.forEach(logMcp);
+        const results = (await Promise.all(body.map((b) => handleMcpRequest(b, req.headers)))).filter(Boolean);
+        const responses = results.map((r) => r.body);
+        body.forEach((msg, i) => logMcpError(msg, responses[i]));
+        return json(res, responses);
       }
-      body.forEach(logMcp);
-      const results = (await Promise.all(body.map((b) => handleMcpRequest(b, req.headers)))).filter(Boolean);
-      const responses = results.map((r) => r.body);
-      body.forEach((msg, i) => logMcpError(msg, responses[i]));
-      return json(res, responses);
+      logMcp(body);
+      const result = await handleMcpRequest(body, req.headers);
+      logMcpError(body, result?.body);
+      if (!result) { res.writeHead(202); return res.end(); }
+      return json(res, result.body, result.status);
+    } catch (err) {
+      // A bug in a single request's handling must not take the whole
+      // instance down with it (it previously did — an unhandled rejection
+      // here crashed the process, which Cloud Run then reports to every
+      // other in-flight request on that instance as a 503).
+      return json(res, { jsonrpc: "2.0", id: null, error: { code: -32603, message: err.message } }, 500);
     }
-    logMcp(body);
-    const result = await handleMcpRequest(body, req.headers);
-    logMcpError(body, result?.body);
-    if (!result) { res.writeHead(202); return res.end(); }
-    return json(res, result.body, result.status);
   }
 
   // ── HTTP API ───────────────────────────────────────────────────────────
