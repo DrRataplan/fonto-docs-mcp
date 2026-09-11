@@ -542,6 +542,133 @@ test("DITA topic: missing title falls back to slug", () => {
 });
 
 // ---------------------------------------------------------------------------
+// DITA nested topics (compound-topic pattern — e.g. one <topic> per REST
+// endpoint on a contract page). Regression coverage for a bug where content
+// under a nested <topic> was silently dropped: only the root topic's own
+// <body> was ever rendered.
+// ---------------------------------------------------------------------------
+
+test("DITA topic: nested topics render as headings at increasing depth", () => {
+  const xml = `<topic id="t1">
+    <title>Root</title>
+    <body><p>Intro.</p></body>
+    <topic id="t2">
+      <title>Level 1</title>
+      <body><p>One.</p></body>
+      <topic id="t3">
+        <title>Level 2</title>
+        <body><p>Two.</p></body>
+      </topic>
+    </topic>
+  </topic>`;
+  const md = xmlToMarkdown(xml, "guide/nested");
+  assert.match(md, /^# Root/);
+  assert.match(md, /Intro\./);
+  assert.match(md, /## Level 1/);
+  assert.match(md, /One\./);
+  assert.match(md, /### Level 2/);
+  assert.match(md, /Two\./);
+});
+
+test("DITA topic: codeblock inside a nested topic's fig renders in place, not duplicated", () => {
+  const xml = `<topic id="t1">
+    <title>Root</title>
+    <topic id="t2">
+      <title>Response</title>
+      <body><fig><codeblock>{"a": 1}</codeblock></fig></body>
+    </topic>
+  </topic>`;
+  const md = xmlToMarkdown(xml, "guide/nested-code");
+  const occurrences = [...md.matchAll(/\{"a": 1\}/g)];
+  assert.equal(occurrences.length, 1, "codeblock content should appear exactly once");
+  assert.match(md, /## Response[\s\S]*```\n\{"a": 1\}\n```/);
+});
+
+test("DITA topic: simpletable inside a nested topic", () => {
+  const xml = `<topic id="t1">
+    <title>Root</title>
+    <topic id="t2">
+      <title>Parameters</title>
+      <body>
+        <simpletable>
+          <sthead><stentry><p>Name</p></stentry><stentry><p>Type</p></stentry></sthead>
+          <strow><stentry><p>documentId</p></stentry><stentry><p>string</p></stentry></strow>
+        </simpletable>
+      </body>
+    </topic>
+  </topic>`;
+  const md = xmlToMarkdown(xml, "guide/nested-table");
+  assert.match(md, /\| Name \| Type \|/);
+  assert.match(md, /\| documentId \| string \|/);
+});
+
+test("DITA topic: CALS table with a spanning caption row above the real header row", () => {
+  const xml = `<topic id="t1">
+    <title>Root</title>
+    <topic id="t2">
+      <title>Status code 200</title>
+      <body>
+        <table frame="all">
+          <tgroup cols="2">
+            <colspec colname="column-1" colnum="1"/>
+            <colspec colname="column-2" colnum="2"/>
+            <thead>
+              <row><entry namest="column-1" nameend="column-2"><p>body</p></entry></row>
+              <row><entry colname="column-1"><p>parameter</p></entry><entry colname="column-2"><p>type</p></entry></row>
+            </thead>
+            <tbody>
+              <row><entry colname="column-1"><p>id</p></entry><entry colname="column-2"><p>string</p></entry></row>
+            </tbody>
+          </tgroup>
+        </table>
+      </body>
+    </topic>
+  </topic>`;
+  const md = xmlToMarkdown(xml, "guide/cals-table");
+  assert.match(md, /\*\*body\*\*/);
+  assert.match(md, /\| parameter \| type \|/);
+  assert.match(md, /\| --- \| --- \|/);
+  assert.match(md, /\| id \| string \|/);
+});
+
+test("DITA topic: note renders as a blockquote, at body root and inside a nested topic", () => {
+  const xml = `<topic id="t1">
+    <title>Root</title>
+    <body><note><p>Top-level callout.</p></note></body>
+    <topic id="t2">
+      <title>Sub</title>
+      <body><note><p>Nested callout.</p></note></body>
+    </topic>
+  </topic>`;
+  const md = xmlToMarkdown(xml, "guide/notes");
+  const noteHeadings = [...md.matchAll(/> \*\*Note\*\*/g)];
+  assert.equal(noteHeadings.length, 2);
+  assert.match(md, /> Top-level callout\./);
+  assert.match(md, /> Nested callout\./);
+});
+
+test("DITA topic: xref renders as a Markdown link, both internal and external", () => {
+  const xml = `<topic id="t1">
+    <title>Root</title>
+    <body>
+      <p>See <xref format="dita" href="/latest/other-page-abc">this page</xref> and <xref format="html" scope="external" href="https://example.com/docs">external docs</xref>.</p>
+    </body>
+  </topic>`;
+  const md = xmlToMarkdown(xml, "guide/xrefs");
+  assert.match(md, /\[this page\]\(https:\/\/documentation\.fontoxml\.com\/latest\/other-page-abc\)/);
+  assert.match(md, /\[external docs\]\(https:\/\/example\.com\/docs\)/);
+});
+
+test("DITA topic: bold text renders as Markdown bold", () => {
+  const xml = `<topic id="t1">
+    <title>Root</title>
+    <body><p>The <b>documentId</b> parameter is required.</p></body>
+  </topic>`;
+  const md = xmlToMarkdown(xml, "guide/bold");
+  assert.match(md, /The \*\*documentId\*\* parameter is required\./);
+});
+
+// ---------------------------------------------------------------------------
 // mcp.js exports
 // ---------------------------------------------------------------------------
 
