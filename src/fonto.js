@@ -26,15 +26,93 @@ function renderInline(node) {
       result += child.nodeValue || "";
     } else if (child.localName === "codeph" || child.localName === "filepath" || child.localName === "varname" || child.localName === "code-phrase") {
       result += `\`${str(".", child)}\``;
+    } else if (child.localName === "b") {
+      result += `**${renderInline(child)}**`;
     } else if (child.localName === "link") {
       const href = str("@reference", child);
-      const text = str(".", child).trim();
+      const text = renderInline(child).trim();
       result += href ? `[${text}](${BASE}${href})` : text;
+    } else if (child.localName === "xref") {
+      const href = str("@href", child);
+      const text = renderInline(child).trim() || href;
+      if (!href) result += text;
+      else if (/^https?:\/\//.test(href) || href.startsWith("mailto:")) result += `[${text}](${href})`;
+      else result += `[${text}](${BASE}${href})`;
     } else {
       result += str(".", child);
     }
   }
   return result.trim();
+}
+
+function renderNote(note, lines) {
+  const paras = nodes("p", note);
+  const texts = (paras.length ? paras.map(p => renderInline(p)) : [renderInline(note)]).filter(Boolean);
+  if (!texts.length) return;
+  lines.push("> **Note**");
+  for (const t of texts) lines.push(`> ${t}`);
+  lines.push("");
+}
+
+// Renders a DITA CALS <table> (as opposed to the simpler <simpletable>): a
+// <tgroup> with <colspec>s, a <thead>, and a <tbody>, all keyed by colname.
+// Some tables have an extra caption-like header row whose single <entry>
+// spans every column (namest/nameend) — that row becomes a bold line above
+// the table instead of a mangled Markdown header.
+function renderCalsTable(table, lines) {
+  const tgroup = nodes("tgroup", table)[0];
+  if (!tgroup) return;
+  const colspecs = nodes("colspec", tgroup);
+  const cols = parseInt(str("@cols", tgroup), 10) || colspecs.length || 0;
+  if (!cols) return;
+
+  const colIndex = new Map(); // colname -> 1-based column index
+  colspecs.forEach((cs, i) => {
+    const name = str("@colname", cs);
+    const num = parseInt(str("@colnum", cs), 10) || (i + 1);
+    if (name) colIndex.set(name, num);
+  });
+
+  const cellText = entry => {
+    const paras = nodes("p", entry);
+    const text = paras.length ? paras.map(p => renderInline(p)).join(" ") : renderInline(entry);
+    return text.replace(/\r?\n/g, " ").replace(/\|/g, "\\|").trim();
+  };
+
+  const rowCells = row => {
+    const cells = new Array(cols).fill("");
+    let next = 1;
+    for (const entry of nodes("entry", row)) {
+      const nameSt = str("@namest", entry);
+      const nameEnd = str("@nameend", entry) || nameSt;
+      const colName = str("@colname", entry);
+      let start = nameSt ? colIndex.get(nameSt) : colName ? colIndex.get(colName) : null;
+      let end = nameEnd ? colIndex.get(nameEnd) : start;
+      if (!start) { start = next; end = start; }
+      next = end + 1;
+      if (start >= 1 && start <= cols) cells[start - 1] = cellText(entry);
+    }
+    return cells;
+  };
+
+  const theadRows = nodes("thead/row", tgroup);
+  const bodyRows = nodes("tbody/row", tgroup);
+  if (!theadRows.length && !bodyRows.length) return;
+
+  let headerCells = null;
+  for (const row of theadRows) {
+    const cells = rowCells(row);
+    if (cells.filter(Boolean).length >= cols) headerCells = cells;
+    else if (cells.some(Boolean)) { lines.push(`**${cells.filter(Boolean).join(" ")}**`); lines.push(""); }
+  }
+  if (!headerCells) headerCells = new Array(cols).fill("");
+
+  lines.push("| " + headerCells.map(c => c || " ").join(" | ") + " |");
+  lines.push("| " + headerCells.map(() => "---").join(" | ") + " |");
+  for (const row of bodyRows) {
+    lines.push("| " + rowCells(row).map(c => c || " ").join(" | ") + " |");
+  }
+  lines.push("");
 }
 
 function renderStentry(entry) {
@@ -279,6 +357,81 @@ function renderApiPage(root, slug) {
 }
 
 // ---------------------------------------------------------------------------
+// DITA nested topics
+//
+// Fonto's DITA source nests <topic> elements as siblings of <body> (a
+// "compound topic" — e.g. one REST contract page with one nested <topic> per
+// endpoint, each further nested into Parameters/Responses/Examples). Content
+// only ever lives in the root topic's own <body>, so without this, anything
+// under a nested <topic> — which for endpoint/contract pages is most of the
+// page — is silently dropped.
+// ---------------------------------------------------------------------------
+
+const BODY_ELEMENTS = "local-name()='body' or local-name()='taskbody' or local-name()='refbody' or local-name()='conbody'";
+
+function renderBodyContent(body, lines) {
+  for (const child of nodes("*", body)) {
+    const ln = child.localName;
+    if (ln === "note") {
+      renderNote(child, lines);
+    } else if (ln === "p") {
+      const t = renderInline(child);
+      if (t) { lines.push(t); lines.push(""); }
+    } else if (ln === "simpletable") {
+      renderSimpletable(child, lines);
+    } else if (ln === "table") {
+      renderCalsTable(child, lines);
+    } else if (ln === "fig") {
+      const codeblocks = nodes("codeblock", child);
+      const figTitle = str("title", child);
+      if (codeblocks.length) {
+        if (figTitle) { lines.push(`**${figTitle.trim()}**`); lines.push(""); }
+        for (const cb of codeblocks) { lines.push("```"); lines.push(str(".", cb).trim()); lines.push("```"); lines.push(""); }
+      } else if (figTitle) {
+        const figDesc = str("desc/p | shortdesc", child);
+        const href = str("data/@href", child);
+        lines.push(href ? `**[${figTitle.trim()}](${BASE}${href})**` : `**${figTitle.trim()}**`);
+        if (figDesc) lines.push(figDesc.trim());
+        lines.push("");
+      }
+    } else if (ln === "codeblock") {
+      lines.push("```"); lines.push(str(".", child).trim()); lines.push("```"); lines.push("");
+    } else if (ln === "steps") {
+      for (const step of nodes("step", child)) {
+        const cmd = renderInline(nodes("cmd", step)[0] || step);
+        if (cmd) lines.push(`1. ${cmd}`);
+        for (const p of nodes("info/p", step)) { const t = renderInline(p); if (t) lines.push(`   ${t}`); }
+      }
+      lines.push("");
+    } else if (ln === "ol" || ln === "ul") {
+      const marker = ln === "ol" ? "1." : "-";
+      for (const li of nodes("li", child)) {
+        const t = renderInline(li);
+        if (t) lines.push(`${marker} ${t}`);
+      }
+      lines.push("");
+    } else if (ln === "section") {
+      const sTitle = str("title", child);
+      if (sTitle) { lines.push(`**${sTitle.trim()}**`); lines.push(""); }
+      renderBodyContent(child, lines);
+    }
+    // Other element types (untitled/image-only figs, dl, raw comments, ...) are skipped.
+  }
+}
+
+function renderNestedTopics(root, lines, depth) {
+  for (const topic of nodes("topic", root)) {
+    const title = str("title", topic);
+    if (title) { lines.push(`${"#".repeat(Math.min(depth + 1, 6))} ${title.trim()}`); lines.push(""); }
+    const shortdesc = str("shortdesc", topic);
+    if (shortdesc) { lines.push(`> ${shortdesc.trim()}`); lines.push(""); }
+    const body = nodes(`*[${BODY_ELEMENTS}]`, topic)[0];
+    if (body) renderBodyContent(body, lines);
+    renderNestedTopics(topic, lines, depth + 1);
+  }
+}
+
+// ---------------------------------------------------------------------------
 // DITA page renderer  (root element: topic | task | concept | reference)
 // ---------------------------------------------------------------------------
 
@@ -293,18 +446,22 @@ function renderDitaPage(root, slug) {
   const shortdesc = str("shortdesc", root);
   if (shortdesc) { lines.push(`> ${shortdesc.trim()}`); lines.push(""); }
 
-  // body / taskbody / refbody — handle all DITA body types
-  const body = nodes("*[local-name()='body' or local-name()='taskbody' or local-name()='refbody']", root)[0];
+  // body / taskbody / refbody / conbody — handle all DITA body types
+  const body = nodes(`*[${BODY_ELEMENTS}]`, root)[0];
   if (body) {
+    // Top-level notes (e.g. a callout directly under <body>, before any section)
+    for (const note of nodes("note", body)) renderNote(note, lines);
+
     // Sections with titles
     for (const section of nodes("*[local-name()='section']", body)) {
       const sTitle = str("title", section);
       if (sTitle) { lines.push(`### ${sTitle.trim()}`); lines.push(""); }
-      for (const p of strs("p", section)) { lines.push(p.trim()); lines.push(""); }
+      for (const p of nodes("p", section)) { const t = renderInline(p); if (t) { lines.push(t); lines.push(""); } }
       // steps
       for (const step of nodes("steps/step | ol/li", section)) {
-        const cmd = str("cmd | .", step);
-        if (cmd.trim()) lines.push(`1. ${cmd.trim()}`);
+        const cmdNode = nodes("cmd", step)[0] || step;
+        const cmd = renderInline(cmdNode);
+        if (cmd) lines.push(`1. ${cmd}`);
       }
       for (const table of nodes("simpletable", section)) renderSimpletable(table, lines);
     }
@@ -314,15 +471,15 @@ function renderDitaPage(root, slug) {
     if (steps.length) {
       lines.push("### Steps"); lines.push("");
       for (const step of steps) {
-        const cmd = str("cmd", step);
-        if (cmd.trim()) lines.push(`1. ${cmd.trim()}`);
-        for (const p of strs("info/p", step)) lines.push(`   ${p.trim()}`);
+        const cmd = renderInline(nodes("cmd", step)[0] || step);
+        if (cmd) lines.push(`1. ${cmd}`);
+        for (const p of nodes("info/p", step)) { const t = renderInline(p); if (t) lines.push(`   ${t}`); }
       }
       lines.push("");
     }
 
     // Top-level paragraphs
-    for (const p of strs("p", body)) { lines.push(p.trim()); lines.push(""); }
+    for (const p of nodes("p", body)) { const t = renderInline(p); if (t) { lines.push(t); lines.push(""); } }
 
     // Top-level simpletables
     for (const table of nodes("simpletable", body)) renderSimpletable(table, lines);
@@ -344,8 +501,13 @@ function renderDitaPage(root, slug) {
     }
   }
 
-  // Code examples
-  const codeBlocks = strs("//codeblock", root);
+  // Nested topics (compound-topic DITA pattern — e.g. one section per REST
+  // endpoint on a contract page). Each renders its own codeblocks in place.
+  renderNestedTopics(root, lines, 1);
+
+  // Code examples that live directly under the root topic's own body.
+  // (Codeblocks inside nested topics were already rendered above, in place.)
+  const codeBlocks = body ? strs(".//codeblock", body) : [];
   if (codeBlocks.length) {
     lines.push("## Examples"); lines.push("");
     for (const code of codeBlocks) {
