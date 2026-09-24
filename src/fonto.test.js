@@ -144,6 +144,42 @@ test("API page: overloaded function renders description, parameters, and return 
   assert.match(md, /Returns `boolean`/);
 });
 
+test("API page: non-overloaded XPath function renders parameters and root return type", () => {
+  const xml = `<type>
+    <name>fonto:column-spec</name>
+    <source>fontoxml-table-flow/src/custom-xpath-functions/columnSpec.ts</source>
+    <description><paragraph>Returns column specification.</paragraph></description>
+    <arguments>
+      <type><name>columnSpecifications</name><restrict><type base="node()"/></restrict></type>
+      <type><name>columnIdentifier</name><restrict><type base="xs:string"/></restrict></type>
+    </arguments>
+    <return>
+      <type>
+        <restrict><type base="item()?"/></restrict>
+        <description><paragraph>The related column specification object</paragraph></description>
+      </type>
+    </return>
+  </type>`;
+  const md = xmlToMarkdown(xml, "fonto-column-spec-0d3684963eb6");
+  assert.match(md, /## Parameters/);
+  assert.doesNotMatch(md, /## Component props/);
+  assert.match(md, /### `columnIdentifier`/);
+  assert.match(md, /\*\*Returns:\*\* `item\(\)\?` — The related column specification object/);
+});
+
+test("API page: root-level return type without description", () => {
+  const xml = `<type>
+    <name>myFunction</name>
+    <arguments>
+      <type><name>value</name><restrict><type base="string"/></restrict></type>
+    </arguments>
+    <return><type><restrict><type base="boolean"/></restrict></type></return>
+  </type>`;
+  const md = xmlToMarkdown(xml, "api/my-function");
+  assert.match(md, /## Component props/);
+  assert.match(md, /\*\*Returns:\*\* `boolean`\n/);
+});
+
 test("API page: source element rendered as source file line", () => {
   const xml = `<type>
     <name>FxButton</name>

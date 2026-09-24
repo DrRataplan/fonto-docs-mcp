@@ -253,10 +253,11 @@ function renderApiPage(root, slug) {
     }
   }
 
-  // Component props (root-level <arguments>)
+  // Component props (root-level <arguments>); XPath functions call these parameters
+  const isXPathFunction = /custom-xpath-functions/.test(source);
   const rootArgs = nodes("arguments/type", root);
   if (rootArgs.length) {
-    lines.push("## Component props");
+    lines.push(isXPathFunction ? "## Parameters" : "## Component props");
     lines.push("");
     for (const arg of rootArgs) {
       const argName = str("name", arg);
@@ -273,6 +274,18 @@ function renderApiPage(root, slug) {
       const argDesc = nodes("description", arg)[0];
       if (argDesc) renderDescriptionInto(argDesc, lines);
     }
+  }
+
+  // Root-level return type (non-overloaded functions, e.g. XPath functions)
+  const rootRetRestrictNode = nodes("return/type/restrict", root)[0];
+  const rootRetTypeStr = rootRetRestrictNode ? renderTypeFromRestrict(rootRetRestrictNode) : "";
+  const rootRetDesc = str("return/type/description/paragraph[1]", root).trim();
+  if (rootRetTypeStr) {
+    lines.push(`**Returns:** \`${rootRetTypeStr}\`${rootRetDesc ? ` — ${rootRetDesc}` : ""}`);
+    lines.push("");
+  } else if (rootRetDesc) {
+    lines.push(`**Returns:** ${rootRetDesc}`);
+    lines.push("");
   }
 
   for (const member of nodes("members/type", root)) {
