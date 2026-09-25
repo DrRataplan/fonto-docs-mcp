@@ -147,7 +147,8 @@ test("API page: overloaded function renders description, parameters, and return 
 test("API page: non-overloaded XPath function renders parameters and root return type", () => {
   const xml = `<type>
     <name>fonto:column-spec</name>
-    <source>fontoxml-table-flow/src/custom-xpath-functions/columnSpec.ts</source>
+    <source export="default">fontoxml-table-flow/src/custom-xpath-functions/columnSpec.ts</source>
+    <restrict><type base="xpath:function"/></restrict>
     <description><paragraph>Returns column specification.</paragraph></description>
     <arguments>
       <type><name>columnSpecifications</name><restrict><type base="node()"/></restrict></type>
@@ -155,7 +156,7 @@ test("API page: non-overloaded XPath function renders parameters and root return
     </arguments>
     <return>
       <type>
-        <restrict><type base="item()?"/></restrict>
+        <restrict optional="true"><type base="item()"/></restrict>
         <description><paragraph>The related column specification object</paragraph></description>
       </type>
     </return>
@@ -178,6 +179,60 @@ test("API page: root-level return type without description", () => {
   const md = xmlToMarkdown(xml, "api/my-function");
   assert.match(md, /## Component props/);
   assert.match(md, /\*\*Returns:\*\* `boolean`\n/);
+});
+
+test("API page: optional return type in overloads is marked with ?", () => {
+  // Modelled on fonto:curated-text-in-node, whose overloads share an optional xs:string return
+  const xml = `<type>
+    <name>fonto:curated-text-in-node</name>
+    <source>fontoxml-selection/src/custom-xpath-functions/curatedTextInNode.ts</source>
+    <overloads>
+      <type>
+        <arguments>
+          <type><name>$node</name><restrict><type base="node()"/></restrict></type>
+        </arguments>
+        <return>
+          <type>
+            <restrict optional="true"><type base="xs:string"/></restrict>
+            <description><paragraph>A string containing the curated text.</paragraph></description>
+          </type>
+        </return>
+      </type>
+      <type>
+        <arguments>
+          <type><name>$node</name><restrict><type base="node()"/></restrict></type>
+          <type><name>$options</name><restrict><type base="map(*)"/></restrict></type>
+        </arguments>
+        <return>
+          <type>
+            <restrict><type base="xs:integer"/></restrict>
+            <description><paragraph>A count.</paragraph></description>
+          </type>
+        </return>
+      </type>
+    </overloads>
+  </type>`;
+  const md = xmlToMarkdown(xml, "fonto-curated-text-in-node-4623872061c2");
+  assert.match(md, /- Returns `xs:string\?` — A string containing the curated text\./);
+  assert.match(md, /- Returns `xs:integer` — A count\./);
+});
+
+test("API page: optional return type that is a union is parenthesised", () => {
+  const xml = `<type>
+    <name>myFunction</name>
+    <return>
+      <type>
+        <restrict optional="true">
+          <restrict type="union">
+            <type base="string"/>
+            <type base="number"/>
+          </restrict>
+        </restrict>
+      </type>
+    </return>
+  </type>`;
+  const md = xmlToMarkdown(xml, "api/my-function");
+  assert.match(md, /\*\*Returns:\*\* `\(string \| number\)\?`/);
 });
 
 test("API page: source element rendered as source file line", () => {

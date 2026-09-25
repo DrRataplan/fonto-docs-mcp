@@ -188,6 +188,13 @@ function renderTypeFromRestrict(restrictNode) {
   return renderTypeChild(inner);
 }
 
+// A return type marked <restrict optional="true"> may be absent (XPath functions: zero-or-one, `T?`).
+function renderReturnType(restrictNode) {
+  const typeStr = renderTypeFromRestrict(restrictNode);
+  if (!typeStr || str("@optional", restrictNode) !== "true") return typeStr;
+  return /[|]|=>/.test(typeStr) ? `(${typeStr})?` : `${typeStr}?`;
+}
+
 function renderApiPage(root, slug) {
   const lines = [];
   lines.push(`# ${slug}`);
@@ -236,7 +243,7 @@ function renderApiPage(root, slug) {
     for (const overload of overloads) {
       const retRestrictNode = nodes("return/type/restrict", overload)[0];
       const retDescNode = nodes("return/type/description", overload)[0];
-      const typeStr = retRestrictNode ? renderTypeFromRestrict(retRestrictNode) : "";
+      const typeStr = retRestrictNode ? renderReturnType(retRestrictNode) : "";
       const descStr = retDescNode ? str("paragraph[1]", retDescNode).trim() : "";
       if (typeStr) retEntries.push({ typeStr, descStr });
     }
@@ -278,7 +285,7 @@ function renderApiPage(root, slug) {
 
   // Root-level return type (non-overloaded functions, e.g. XPath functions)
   const rootRetRestrictNode = nodes("return/type/restrict", root)[0];
-  const rootRetTypeStr = rootRetRestrictNode ? renderTypeFromRestrict(rootRetRestrictNode) : "";
+  const rootRetTypeStr = rootRetRestrictNode ? renderReturnType(rootRetRestrictNode) : "";
   const rootRetDesc = str("return/type/description/paragraph[1]", root).trim();
   if (rootRetTypeStr) {
     lines.push(`**Returns:** \`${rootRetTypeStr}\`${rootRetDesc ? ` — ${rootRetDesc}` : ""}`);
@@ -330,7 +337,7 @@ function renderApiPage(root, slug) {
 
     // Return type
     const retRestrictNode = nodes("return/type/restrict", member)[0];
-    const retTypeStr = retRestrictNode ? renderTypeFromRestrict(retRestrictNode) : "";
+    const retTypeStr = retRestrictNode ? renderReturnType(retRestrictNode) : "";
     const retDesc = str("return/type/description/paragraph[1]", member);
     if (retTypeStr || retDesc) {
       lines.push("");
