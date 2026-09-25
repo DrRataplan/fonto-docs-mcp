@@ -5,6 +5,17 @@ updates:
     schedule:
       interval: weekly
     open-pull-requests-limit: 5
+    # Runtime deps ship in the published package, so bumps get `fix(deps):` and
+    # trigger a semantic-release patch. Dev deps only touch tooling: `chore(deps-dev):`.
+    commit-message:
+      prefix: fix
+      prefix-development: chore
+      include: scope
+    groups:
+      production-dependencies:
+        dependency-type: production
+      development-dependencies:
+        dependency-type: development
 
   - package-ecosystem: github-actions
     directory: /
