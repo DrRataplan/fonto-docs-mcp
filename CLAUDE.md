@@ -16,7 +16,7 @@ npm test         # unit tests via Node.js built-in test runner
 |---|---|
 | `src/fonto.js` | Fetches XML from `documentation.fontoxml.com/static/xml/latest/<slug>.xml`, parses it with slimdom + fontoxpath, and renders it to Markdown. Also calls the Fonto search API. |
 | `src/mcp.js` | MCP protocol handler. Defines tools (`search_fonto_docs`, `get_fonto_page`, `list_pages`) and the `fonto://catalog` resource. Routes requests to `fonto.js`. |
-| `src/server.js` | HTTP server. Routes: `POST /mcp`, `GET /search`, `GET /page/:slug`, `GET /llms.txt`, `GET /.well-known/mcp/server-card.json`, `GET /healthz`, `GET /`. |
+| `src/server.js` | HTTP server. Routes: `POST /mcp`, `GET /search`, `GET /page/:slug`, `GET /catalog`, `GET /llms.txt`, `GET /robots.txt`, `GET /sitemap.xml`, `GET /.well-known/mcp/server-card.json`, `GET /health` (not `/healthz` — reserved by GCP; exempt from rate limiting), `GET /`, `GET /privacy`. |
 | `src/fonto.test.js` | Unit tests for `xmlToMarkdown` using Node.js built-in test runner (no extra dependencies). |
 
 ## XML → Markdown pipeline
