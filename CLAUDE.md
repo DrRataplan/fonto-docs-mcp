@@ -14,9 +14,9 @@ npm test         # unit tests via Node.js built-in test runner
 
 | File | Responsibility |
 |---|---|
-| `src/fonto.js` | Fetches XML from `documentation.fontoxml.com/static/xml/latest/<slug>.xml`, parses it with slimdom + fontoxpath, and renders it to Markdown. Also calls the Fonto search API. |
-| `src/mcp.js` | MCP protocol handler. Defines tools (`search_fonto_docs`, `get_fonto_page`, `list_pages`) and the `fonto://catalog` resource. Routes requests to `fonto.js`. |
-| `src/server.js` | HTTP server. Routes: `POST /mcp`, `GET /search`, `GET /page/:slug`, `GET /llms.txt`, `GET /.well-known/mcp/server-card.json`, `GET /healthz`, `GET /`. |
+| `src/fonto.js` | Fetches XML from `documentation.fontoxml.com/static/xml/latest/<slug>.xml`, parses it with slimdom + fontoxpath, and renders it to Markdown. Also calls the Fonto search API, and resolves API symbol names to pages via exact title match against the catalog (`findApiMatches`, `lookupApi`). |
+| `src/mcp.js` | MCP protocol handler. Defines tools (`search_fonto_docs`, `get_fonto_page`, `lookup_api`, `list_pages`) and the `fonto://catalog` resource. Routes requests to `fonto.js`. |
+| `src/server.js` | HTTP server. Routes: `POST /mcp`, `GET /search`, `GET /page/:slug`, `GET /api/:name`, `GET /llms.txt`, `GET /.well-known/mcp/server-card.json`, `GET /healthz`, `GET /`. |
 | `src/fonto.test.js` | Unit tests for `xmlToMarkdown` using Node.js built-in test runner (no extra dependencies). |
 
 ## XML → Markdown pipeline

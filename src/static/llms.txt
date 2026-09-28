@@ -8,6 +8,7 @@ Connect to this server at https://fonto-docs.elliat.nl/mcp (HTTP transport, no a
 
 - **search_fonto_docs(query)** — Full-text search, returns results ranked by relevance with titles, descriptions, and slugs. Best for looking up a concept, API name, or feature by keyword.
 - **get_fonto_page(slug)** — Fetch the full content of a Fonto documentation page by its slug (the part of the URL after /latest/). Use search_fonto_docs or list_pages first to find the right slug.
+- **lookup_api(name)** — Resolve a Fonto API symbol by exact name (e.g. 'documentsManager', 'createIconWidget') to its full documentation page in one call. Case-sensitive first; same-named pages are listed as alternatives; returns search suggestions if nothing matches.
 - **list_pages(keyword)** — Filter pages by title, product, or ancestry keyword. Returns all matches without ranking — useful when you know the product area or part of the page title. For the complete catalog use the fonto://catalog resource.
 
 ## MCP resources
@@ -19,6 +20,7 @@ Connect to this server at https://fonto-docs.elliat.nl/mcp (HTTP transport, no a
 
 - GET /search?q={query} — Search documentation pages. Returns JSON object with a `results` array of {title, slug, url, description}.
 - GET /page/{slug} — Fetch a page as Markdown. Example: /page/documentsmanager-f746b3a48442
+- GET /api/{name} — Fetch the page for an API symbol by exact name, as Markdown. 404 with JSON `suggestions` if no page has that name. Example: /api/documentsManager
 - GET /catalog — Full page catalog as Markdown, grouped by section. Add ?section={keyword} to filter.
 
 ## MCP setup

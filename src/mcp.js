@@ -1,4 +1,16 @@
-import { searchDocs, fetchPage, getCatalog, listPages } from "./fonto.js";
+import { searchDocs, fetchPage, getCatalog, listPages, lookupApi } from "./fonto.js";
+
+const PAGE_REF_SCHEMA = {
+  type: "object",
+  properties: {
+    slug: { type: "string" },
+    title: { type: "string" },
+    url: { type: "string" },
+    product: { type: "string" },
+    ancestry: { type: "array", items: { type: "string" } },
+  },
+  required: ["slug", "title", "url"],
+};
 
 export const MCP_TOOLS = [
   {
@@ -60,6 +72,46 @@ export const MCP_TOOLS = [
     },
   },
   {
+    name: "lookup_api",
+    description: "Look up a Fonto API symbol by exact name (function, class, manager, type, or component — e.g. 'documentsManager', 'createIconWidget', 'CvkOptions') and return its full documentation page in one call. Accepts call syntax ('registerWidget()'), import paths ('fontoxml-families/src/createIconWidget'), and member access ('documentsManager.getNodeById', resolved to the owner's page). Matching is case-sensitive first, so 'DocumentsManager' (class) and 'documentsManager' (instance) resolve to different pages; other same-named pages are listed as alternatives. If no page has that name, returns search suggestions instead — use search_fonto_docs for concepts or partial names.",
+    inputSchema: {
+      type: "object",
+      properties: { name: { type: "string", description: "API symbol name, e.g. 'documentsManager' or 'createIconWidget'" } },
+      required: ["name"],
+    },
+    outputSchema: {
+      type: "object",
+      properties: {
+        found: { type: "boolean" },
+        match: PAGE_REF_SCHEMA,
+        content: { type: "string", description: "Markdown content of the matched page" },
+        alternatives: { type: "array", items: PAGE_REF_SCHEMA, description: "Other pages with the same name (e.g. differing only in case)" },
+        suggestions: {
+          type: "array",
+          description: "Full-text search results, only when no page matched by name",
+          items: {
+            type: "object",
+            properties: {
+              title: { type: "string" },
+              description: { type: "string" },
+              url: { type: "string" },
+              slug: { type: "string" },
+            },
+            required: ["title", "slug", "url"],
+          },
+        },
+      },
+      required: ["found", "alternatives", "suggestions"],
+    },
+    annotations: {
+      title: "Look Up Fonto API",
+      readOnlyHint: true,
+      destructiveHint: false,
+      idempotentHint: true,
+      openWorldHint: true,
+    },
+  },
+  {
     name: "list_pages",
     description: "Filter Fonto documentation pages by title, product, or ancestry keyword. Returns all matches without ranking — useful when you know the product area or part of the page title. For full-text relevance search use search_fonto_docs; for the complete catalog use the fonto://catalog resource.",
     inputSchema: {
@@ -70,20 +122,7 @@ export const MCP_TOOLS = [
     outputSchema: {
       type: "object",
       properties: {
-        pages: {
-          type: "array",
-          items: {
-            type: "object",
-            properties: {
-              slug: { type: "string" },
-              title: { type: "string" },
-              url: { type: "string" },
-              product: { type: "string" },
-              ancestry: { type: "array", items: { type: "string" } },
-            },
-            required: ["slug", "title", "url"],
-          },
-        },
+        pages: { type: "array", items: PAGE_REF_SCHEMA },
       },
       required: ["pages"],
     },
@@ -165,6 +204,20 @@ const RESOURCES_LIST_CACHE = { ttlMs: 3_600_000, cacheScope: "public" };
 const RESOURCE_READ_CACHE = { ttlMs: 600_000, cacheScope: "public" };
 
 const NAME_REQUIRED_METHODS = new Set(["tools/call", "resources/read"]);
+
+const pagePath = p => [...p.ancestry, p.title].join(" > ");
+
+export function formatLookupResult(name, { found, content, alternatives, suggestions }) {
+  if (!found) {
+    const hint = suggestions.length === 0
+      ? ""
+      : `\n\nDid you mean:\n${suggestions.map(s => `- ${s.title} (slug: ${s.slug})`).join("\n")}`;
+    return `No API page named "${name}".${hint}`;
+  }
+  if (alternatives.length === 0) return content;
+  const others = alternatives.map(a => `- ${a.slug} — ${pagePath(a)}`).join("\n");
+  return `${content}\n\n---\n\nOther pages with this name:\n${others}`;
+}
 
 function res(body, status = 200) {
   return { status, body };
@@ -252,7 +305,7 @@ function serverDiscoverResult(id) {
   return modernResult(id, {
     supportedVersions: SUPPORTED_MODERN_VERSIONS,
     capabilities: { tools: {}, resources: { subscribe: false } },
-    instructions: "Search and read Fonto XML documentation, converted to Markdown from the underlying DITA source. Use search_fonto_docs or list_pages to find a page, then get_fonto_page to fetch its content.",
+    instructions: "Search and read Fonto XML documentation, converted to Markdown from the underlying DITA source. Use lookup_api when you know an API name (e.g. documentsManager) to get its page in one call. Otherwise use search_fonto_docs or list_pages to find a page, then get_fonto_page to fetch its content.",
   }, { ttlMs: TOOLS_LIST_CACHE.ttlMs, cacheScope: "public" });
 }
 
@@ -308,6 +361,10 @@ export async function handleMcpRequest(body, headers = {}) {
         if (!args.slug?.trim()) return toolError("slug must be a non-empty string");
         text = await fetchPage(args.slug);
         structuredContent = { content: text };
+      } else if (name === "lookup_api") {
+        if (!args.name?.trim()) return toolError("name must be a non-empty string");
+        structuredContent = await lookupApi(args.name);
+        text = formatLookupResult(args.name, structuredContent);
       } else if (name === "list_pages") {
         if (!args.keyword?.trim()) return toolError("keyword must be a non-empty string");
         const pages = await listPages(args.keyword);

@@ -588,6 +588,52 @@ export async function listPages(keyword) {
 }
 
 // ---------------------------------------------------------------------------
+// API symbol lookup (exact name → page)
+// ---------------------------------------------------------------------------
+
+// Reduces what an agent might paste — `createIconWidget()`,
+// `fontoxml-families/src/createIconWidget.ts`, `documentsManager.getNodeById`
+// — to the bare symbol name used as the API page title.
+export function normalizeApiName(name) {
+  let n = name.trim().replace(/\(.*\)$/, "");
+  n = n.split("/").pop().replace(/\.(ts|tsx|js|jsx)$/, "");
+  return n.trim();
+}
+
+const isApiPage = p => p.ancestry.includes("API");
+
+// Finds catalog pages whose title matches `name` exactly. Case-sensitive
+// matches rank first (Fonto has e.g. both the `DocumentsManager` class and the
+// `documentsManager` manager instance), then API pages before guides. A
+// dotted name like `documentsManager.getNodeById` falls back to its owner.
+export function findApiMatches(catalog, name) {
+  const target = normalizeApiName(name);
+  if (!target) return [];
+  const lower = target.toLowerCase();
+  const rank = p => (p.title === target ? 0 : 2) + (isApiPage(p) ? 0 : 1);
+  const matches = catalog
+    .filter(p => p.title.toLowerCase() === lower)
+    .sort((a, b) => rank(a) - rank(b));
+  if (matches.length === 0 && target.includes(".")) {
+    return findApiMatches(catalog, target.slice(0, target.lastIndexOf(".")));
+  }
+  return matches;
+}
+
+// Resolves an API name to its documentation page in one call. Returns the
+// best match's content plus any other same-named pages; when nothing matches
+// by name, returns full-text search results as suggestions instead.
+export async function lookupApi(name) {
+  const matches = findApiMatches(await getCatalog(), name);
+  if (matches.length === 0) {
+    const suggestions = (await searchDocs(normalizeApiName(name) || name)).slice(0, 5);
+    return { found: false, alternatives: [], suggestions };
+  }
+  const [match, ...alternatives] = matches;
+  return { found: true, match, content: await fetchPage(match.slug), alternatives, suggestions: [] };
+}
+
+// ---------------------------------------------------------------------------
 // Search via Fonto search API
 // ---------------------------------------------------------------------------
 
