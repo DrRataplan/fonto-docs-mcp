@@ -935,3 +935,11 @@ test("unknown methods are 404 under the modern revision but a plain JSON-RPC err
 test("notifications produce no response in either era", async () => {
   assert.strictEqual(await handleMcpRequest({ jsonrpc: "2.0", method: "notifications/initialized" }), null);
 });
+
+test("serverInfo advertises icons with HTTPS sources", async () => {
+  const { body } = await handleMcpRequest({ jsonrpc: "2.0", id: 1, method: "initialize", params: {} });
+  const { icons } = body.result.serverInfo;
+  assert.ok(icons.length > 0);
+  for (const icon of icons) assert.match(icon.src, /^https:\/\//);
+  assert.ok(icons.some((i) => i.mimeType === "image/png"));
+});

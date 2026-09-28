@@ -5,6 +5,7 @@ RUN npm ci --omit=dev
 COPY src/ ./src/
 RUN apk add --no-cache --virtual .build-deps rsvg-convert ttf-dejavu && \
     rsvg-convert -w 1200 -h 630 src/static/og-image.svg -o src/static/og-image.png && \
+    rsvg-convert -w 256 -h 256 src/static/favicon.svg -o src/static/favicon.png && \
     apk del .build-deps
 EXPOSE 8080
 CMD ["node", "src/server.js"]

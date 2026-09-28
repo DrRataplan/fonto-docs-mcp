@@ -136,7 +136,19 @@ export const MCP_RESOURCE_TEMPLATES = [
 // from the header's *value*: legacy clients send a recognized legacy version
 // string; only anything else is a modern (or modern-attempting) request.
 
-const SERVER_INFO = { name: "fonto-docs", version: "0.1.0" };
+// Icons per MCP 2025-11-25 Implementation.icons. Claude's custom connectors
+// don't render these yet (anthropics/claude-ai-mcp#152), but other clients do.
+export const SERVER_ICONS = [
+  { src: "https://fonto-docs.elliat.nl/favicon.svg", mimeType: "image/svg+xml", sizes: ["any"] },
+  { src: "https://fonto-docs.elliat.nl/favicon.png", mimeType: "image/png", sizes: ["256x256"] },
+];
+const SERVER_INFO = {
+  name: "fonto-docs",
+  title: "Fonto Docs",
+  version: "0.1.0",
+  websiteUrl: "https://fonto-docs.elliat.nl/",
+  icons: SERVER_ICONS,
+};
 const MODERN_PROTOCOL_VERSION = "2026-07-28";
 const SUPPORTED_MODERN_VERSIONS = [MODERN_PROTOCOL_VERSION];
 
