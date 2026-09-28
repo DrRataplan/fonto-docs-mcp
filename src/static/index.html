@@ -102,9 +102,15 @@
 <p>The server is already running at <code>https://fonto-docs.elliat.nl/mcp</code> — no installation needed.</p>
 <p><strong>Claude Code:</strong></p>
 <pre>claude mcp add --transport http fonto-docs https://fonto-docs.elliat.nl/mcp</pre>
-<p><strong>Cursor / Claude Desktop / VS Code</strong> — add to <code>mcp.json</code>:</p>
+<p><strong>Cursor / Claude Desktop</strong> — add to <code>mcp.json</code>:</p>
 <pre>{
   "mcpServers": {
+    "fonto-docs": { "type": "http", "url": "https://fonto-docs.elliat.nl/mcp" }
+  }
+}</pre>
+<p><strong>VS Code</strong> — add to <code>.vscode/mcp.json</code> (note the <code>servers</code> key):</p>
+<pre>{
+  "servers": {
     "fonto-docs": { "type": "http", "url": "https://fonto-docs.elliat.nl/mcp" }
   }
 }</pre>
@@ -118,7 +124,7 @@
 </div>
 
 <h2>How it works</h2>
-<p>The Fonto documentation site stores its content as XML files at predictable paths under <code>/static/xml/latest/</code>. This server fetches those files directly, parses them with <a href="https://github.com/nicktindall/slimdom">slimdom</a> and <a href="https://github.com/FontoXML/fontoxpath">fontoxpath</a>, and converts them to Markdown. Fonto uses two XML formats — DITA-structured guide pages and a custom API reference format — and the conversion handles both. Page content is cached in-process for 10 minutes to absorb repeated lookups in the same session.</p>
+<p>The Fonto documentation site stores its content as XML files at predictable paths under <code>/static/xml/latest/</code>. This server fetches those files directly, parses them with <a href="https://github.com/bwrrp/slimdom.js">slimdom</a> and <a href="https://github.com/FontoXML/fontoxpath">fontoxpath</a>, and converts them to Markdown. Fonto uses two XML formats — DITA-structured guide pages and a custom API reference format — and the conversion handles both. Page content is cached in-process for 10 minutes to absorb repeated lookups in the same session.</p>
 
 <h2>Documentation sections</h2>
 <p>Browse the full catalog filtered by section:</p>
