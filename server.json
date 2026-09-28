@@ -3,6 +3,23 @@
   "name": "io.github.DrRataplan/fonto-docs",
   "title": "Fonto Docs",
   "description": "Fonto (FontoXML) documentation for AI tools. Converts DITA XML to Markdown on demand.",
+  "websiteUrl": "https://fonto-docs.elliat.nl/",
+  "icons": [
+    {
+      "src": "https://fonto-docs.elliat.nl/favicon.svg",
+      "mimeType": "image/svg+xml",
+      "sizes": [
+        "any"
+      ]
+    },
+    {
+      "src": "https://fonto-docs.elliat.nl/favicon.png",
+      "mimeType": "image/png",
+      "sizes": [
+        "256x256"
+      ]
+    }
+  ],
   "repository": {
     "url": "https://github.com/DrRataplan/fonto-docs-mcp",
     "source": "github"

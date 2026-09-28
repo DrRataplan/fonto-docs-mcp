@@ -3,7 +3,7 @@ import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { join, dirname } from "node:path";
 import { searchDocs, fetchPage, getCatalog, listPages } from "./fonto.js";
-import { handleMcpRequest, isModernRequest, MCP_TOOLS, MCP_RESOURCES, MCP_RESOURCE_TEMPLATES } from "./mcp.js";
+import { handleMcpRequest, isModernRequest, MCP_TOOLS, MCP_RESOURCES, MCP_RESOURCE_TEMPLATES, SERVER_ICONS } from "./mcp.js";
 
 const PORT = process.env.PORT ?? 8080;
 const STATIC = join(dirname(fileURLToPath(import.meta.url)), "static");
@@ -14,8 +14,11 @@ const LLMS_TXT        = readFileSync(join(STATIC, "llms.txt"), "utf8");
 const INDEX_HTML      = readFileSync(join(STATIC, "index.html"), "utf8");
 const PRIVACY_HTML    = readFileSync(join(STATIC, "privacy.html"), "utf8");
 
+// PNGs are rendered from the SVGs during the Docker build; absent in local dev.
 let OG_IMAGE_PNG = null;
 try { OG_IMAGE_PNG = readFileSync(join(STATIC, "og-image.png")); } catch {}
+let FAVICON_PNG = null;
+try { FAVICON_PNG = readFileSync(join(STATIC, "favicon.png")); } catch {}
 
 const SECTIONS = [
   { name: "Get started",       slug: "get-started",       pages: 9    },
@@ -235,6 +238,14 @@ const server = createServer(async (req, res) => {
   // ── Static assets ──────────────────────────────────────────────────────
   if (url.pathname === "/favicon.svg")  return svg(res, FAVICON_SVG);
   if (url.pathname === "/og-image.svg") return svg(res, OG_IMAGE_SVG);
+  if (url.pathname === "/favicon.png") {
+    if (FAVICON_PNG) {
+      res.writeHead(200, { "Content-Type": "image/png", "Cache-Control": "public, max-age=86400" });
+      return res.end(FAVICON_PNG);
+    }
+    res.writeHead(302, { "Location": "/favicon.svg" });
+    return res.end();
+  }
   if (url.pathname === "/og-image.png") {
     if (OG_IMAGE_PNG) {
       res.writeHead(200, { "Content-Type": "image/png", "Cache-Control": "public, max-age=86400" });
@@ -259,6 +270,7 @@ const server = createServer(async (req, res) => {
         version: "0.1.0",
         description: "Makes Fonto documentation accessible to AI tools. Fetches the underlying DITA XML and converts it to Markdown on demand — bypassing the JavaScript SPA.",
         homepage: "https://fonto-docs.elliat.nl",
+        icons: SERVER_ICONS,
         repository: "https://github.com/DrRataplan/fonto-docs-mcp",
         relatedProjects: [
           { name: "xq-lsp", url: "https://github.com/DrRataplan/xq-lsp", description: "Client-side LSP implementation for XQuery — autocomplete and language intelligence for the XQuery side of Fonto development (Fonto uses both TypeScript and XQuery)." },
