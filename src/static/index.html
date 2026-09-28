@@ -102,7 +102,8 @@
 <p>The server is already running at <code>https://fonto-docs.elliat.nl/mcp</code> — no installation needed.</p>
 <p><strong>Claude Code:</strong></p>
 <pre>claude mcp add --transport http fonto-docs https://fonto-docs.elliat.nl/mcp</pre>
-<p><strong>Cursor / Claude Desktop</strong> — add to <code>mcp.json</code>:</p>
+<p><strong>Claude Desktop / claude.ai</strong> — go to <em>Customize → Connectors</em>, click <em>+ → Add custom connector</em>, and paste <code>https://fonto-docs.elliat.nl/mcp</code>. No OAuth settings needed. (<a href="https://support.claude.com/en/articles/11175166-get-started-with-custom-connectors-using-remote-mcp">Help article</a>)</p>
+<p><strong>Cursor</strong> — add to <code>.cursor/mcp.json</code>:</p>
 <pre>{
   "mcpServers": {
     "fonto-docs": { "type": "http", "url": "https://fonto-docs.elliat.nl/mcp" }

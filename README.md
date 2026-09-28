@@ -49,20 +49,11 @@ Add to `.cursor/mcp.json` in your project (or `~/.cursor/mcp.json` globally):
 }
 ```
 
-### Claude Desktop
+### Claude Desktop / claude.ai
 
-Add to `~/Library/Application Support/Claude/claude_desktop_config.json` (macOS) or `%APPDATA%\Claude\claude_desktop_config.json` (Windows):
+Add it as a custom connector: go to **Customize → Connectors**, click **+** → **Add custom connector**, and paste `https://fonto-docs.elliat.nl/mcp`. No OAuth settings are needed. Connectors added this way are available in both Claude Desktop and claude.ai. See [Get started with custom connectors using remote MCP](https://support.claude.com/en/articles/11175166-get-started-with-custom-connectors-using-remote-mcp).
 
-```json
-{
-  "mcpServers": {
-    "fonto-docs": {
-      "type": "http",
-      "url": "https://fonto-docs.elliat.nl/mcp"
-    }
-  }
-}
-```
+(`claude_desktop_config.json` only launches local stdio servers, so it can't be used for this server.)
 
 ## Usage examples
 
