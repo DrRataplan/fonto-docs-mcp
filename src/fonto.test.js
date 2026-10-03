@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { xmlToMarkdown } from "./fonto.js";
+import { xmlToMarkdown, pickApiPage } from "./fonto.js";
 import { handleMcpRequest, MCP_TOOLS, MCP_RESOURCES, MCP_RESOURCE_TEMPLATES } from "./mcp.js";
 
 const BASE = "https://documentation.fontoxml.com";
@@ -942,4 +942,28 @@ test("serverInfo advertises icons with HTTPS sources", async () => {
   assert.ok(icons.length > 0);
   for (const icon of icons) assert.match(icon.src, /^https:\/\//);
   assert.ok(icons.some((i) => i.mimeType === "image/png"));
+});
+
+// ---------------------------------------------------------------------------
+// pickApiPage  (name -> catalog entry for GET /api/:name)
+// ---------------------------------------------------------------------------
+
+const API_CATALOG = [
+  { slug: "operations-guide-1", title: "Operations manager guide", ancestry: [] },
+  { slug: "operationsmanager-0123456789ab", title: "OperationsManager", ancestry: [] },
+  { slug: "documentsmanager-f746b3a48442", title: "DocumentsManager", ancestry: [] },
+];
+
+test("pickApiPage: resolves a manager name case-insensitively to the generated page", () => {
+  assert.equal(pickApiPage(API_CATALOG, "operationsManager").page.slug, "operationsmanager-0123456789ab");
+});
+
+test("pickApiPage: falls back to a unique partial title match", () => {
+  assert.equal(pickApiPage(API_CATALOG, "documents").page.slug, "documentsmanager-f746b3a48442");
+});
+
+test("pickApiPage: returns no page for unknown or ambiguous names", () => {
+  assert.equal(pickApiPage(API_CATALOG, "nope").page, null);
+  assert.equal(pickApiPage(API_CATALOG, "manager").page, null);
+  assert.equal(pickApiPage(API_CATALOG, "manager").candidates.length, 3);
 });

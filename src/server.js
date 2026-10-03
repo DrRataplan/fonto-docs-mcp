@@ -2,7 +2,7 @@ import { createServer } from "node:http";
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { join, dirname } from "node:path";
-import { searchDocs, fetchPage, getCatalog, listPages } from "./fonto.js";
+import { searchDocs, fetchPage, getCatalog, listPages, fetchApiPage } from "./fonto.js";
 import { handleMcpRequest, isModernRequest, MCP_TOOLS, MCP_RESOURCES, MCP_RESOURCE_TEMPLATES, SERVER_ICONS } from "./mcp.js";
 
 const PORT = process.env.PORT ?? 8080;
@@ -205,6 +205,18 @@ const server = createServer(async (req, res) => {
     try {
       logEvent({ type: "http_page", slug });
       return text(res, await fetchPage(slug));
+    } catch (err) {
+      const status = /\(HTTP 404\)/.test(err.message) ? 404 : 500;
+      return json(res, { error: err.message }, status);
+    }
+  }
+
+  if (url.pathname.startsWith("/api/")) {
+    const name = decodeURIComponent(url.pathname.slice("/api/".length));
+    if (!name) return json(res, { error: "Missing API name" }, 400);
+    try {
+      logEvent({ type: "http_api", name });
+      return text(res, await fetchApiPage(name));
     } catch (err) {
       const status = /\(HTTP 404\)/.test(err.message) ? 404 : 500;
       return json(res, { error: err.message }, status);

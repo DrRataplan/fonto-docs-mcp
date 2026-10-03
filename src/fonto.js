@@ -587,6 +587,32 @@ export async function listPages(keyword) {
   );
 }
 
+// Resolve an API name (e.g. "operationsManager") to the best catalog entry.
+// Generated API pages have slugs like "documentsmanager-f746b3a48442", so a
+// slug of `<name>-<12 hex>` is the type page with every member documented —
+// the most complete page for a manager. Falls back to an exact title match,
+// then to a unique title/slug containing the name.
+export function pickApiPage(catalog, name) {
+  const n = name.toLowerCase().replace(/\.xml$/, "");
+  const escaped = n.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const generatedRe = new RegExp(`^${escaped}-[0-9a-f]{12}$`);
+  const generated = catalog.filter(p => generatedRe.test(p.slug.toLowerCase()));
+  if (generated.length) return { page: generated[0], candidates: generated };
+  const exact = catalog.filter(p => p.title.toLowerCase() === n || p.slug.toLowerCase() === n);
+  if (exact.length) return { page: exact[0], candidates: exact };
+  const partial = catalog.filter(p => p.title.toLowerCase().includes(n) || p.slug.toLowerCase().includes(n));
+  return { page: partial.length === 1 ? partial[0] : null, candidates: partial };
+}
+
+export async function fetchApiPage(name) {
+  const { page, candidates } = pickApiPage(await getCatalog(), name);
+  if (!page) {
+    const hint = candidates.slice(0, 10).map(c => c.slug).join(", ");
+    throw new Error(`No API page found for "${name}" (HTTP 404).${hint ? ` Did you mean: ${hint}?` : " Try /search?q= to find it."}`);
+  }
+  return fetchPage(page.slug);
+}
+
 // ---------------------------------------------------------------------------
 // Search via Fonto search API
 // ---------------------------------------------------------------------------
