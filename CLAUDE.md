@@ -17,6 +17,7 @@ npm test         # unit tests via Node.js built-in test runner
 | `src/fonto.js` | Fetches XML from `documentation.fontoxml.com/static/xml/latest/<slug>.xml`, parses it with slimdom + fontoxpath, and renders it to Markdown. Also calls the Fonto search API, and resolves API symbol names to pages via exact title match against the catalog (`findApiMatches`, `lookupApi`). |
 | `src/mcp.js` | MCP protocol handler. Defines tools (`search_fonto_docs`, `get_fonto_page`, `lookup_api`, `list_pages`) and the `fonto://catalog` resource. Routes requests to `fonto.js`. |
 | `src/server.js` | HTTP server. Routes: `POST /mcp`, `GET /search`, `GET /page/:slug`, `GET /api/:name`, `GET /llms.txt`, `GET /.well-known/mcp/server-card.json`, `GET /healthz`, `GET /`. |
+| `src/static/` | Files served by `server.js`: `index.html` (landing page; `{{SECTION_GRID}}` is filled from `SECTIONS` in `server.js`), `privacy.html`, `llms.txt`, `favicon.svg`, `og-image.svg`. `og-image.png` and `favicon.png` are rendered from the SVGs during the Docker build. The favicon doubles as the MCP server icon (`SERVER_ICONS` in `mcp.js`, also in `server.json`). |
 | `src/fonto.test.js` | Unit tests for `xmlToMarkdown` using Node.js built-in test runner (no extra dependencies). |
 
 ## XML → Markdown pipeline

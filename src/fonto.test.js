@@ -1007,4 +1007,10 @@ test("lookup_api rejects an empty name without touching the network", async () =
   const { body } = await handleMcpRequest({ jsonrpc: "2.0", id: 1, method: "tools/call", params: { name: "lookup_api", arguments: { name: " " } } });
   assert.strictEqual(body.result.isError, true);
   assert.match(body.result.content[0].text, /name must be a non-empty string/);
+test("serverInfo advertises icons with HTTPS sources", async () => {
+  const { body } = await handleMcpRequest({ jsonrpc: "2.0", id: 1, method: "initialize", params: {} });
+  const { icons } = body.result.serverInfo;
+  assert.ok(icons.length > 0);
+  for (const icon of icons) assert.match(icon.src, /^https:\/\//);
+  assert.ok(icons.some((i) => i.mimeType === "image/png"));
 });

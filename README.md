@@ -21,6 +21,7 @@ MCP (Model Context Protocol) is a standard way to give AI assistants access to e
 | Resource | What it contains |
 |---|---|
 | `fonto://catalog` | All ~2000 pages with real titles, product grouping, and ancestry paths |
+| `fonto://page/{slug}` | Resource template — address any page directly by its slug |
 
 You can then ask things like *"How does addDocumentChangeCallback work?"* and the AI will look it up in the live Fonto docs.
 
@@ -49,20 +50,11 @@ Add to `.cursor/mcp.json` in your project (or `~/.cursor/mcp.json` globally):
 }
 ```
 
-### Claude Desktop
+### Claude Desktop / claude.ai
 
-Add to `~/Library/Application Support/Claude/claude_desktop_config.json` (macOS) or `%APPDATA%\Claude\claude_desktop_config.json` (Windows):
+Add it as a custom connector: go to **Customize → Connectors**, click **+** → **Add custom connector**, and paste `https://fonto-docs.elliat.nl/mcp`. No OAuth settings are needed. Connectors added this way are available in both Claude Desktop and claude.ai. See [Get started with custom connectors using remote MCP](https://support.claude.com/en/articles/11175166-get-started-with-custom-connectors-using-remote-mcp).
 
-```json
-{
-  "mcpServers": {
-    "fonto-docs": {
-      "type": "http",
-      "url": "https://fonto-docs.elliat.nl/mcp"
-    }
-  }
-}
-```
+(`claude_desktop_config.json` only launches local stdio servers, so it can't be used for this server.)
 
 ## Usage examples
 
@@ -85,7 +77,7 @@ The server also exposes a plain HTTP API if you want to use it without MCP:
 
 ## How it works
 
-The Fonto documentation site stores its content as XML at predictable URLs under `/static/xml/`. This server fetches those XML files directly and converts them to Markdown, bypassing the JavaScript rendering. Page content is never cached — every `get_fonto_page` call goes to `documentation.fontoxml.com` live. The page catalog (used by `list_pages` and `fonto://catalog`) is fetched once from the Fonto search index on first use and held in memory for the lifetime of the process.
+The Fonto documentation site stores its content as XML at predictable URLs under `/static/xml/`. This server fetches those XML files directly and converts them to Markdown, bypassing the JavaScript rendering. Page content is cached in-process for 10 minutes to absorb repeated lookups in the same session; after that, `get_fonto_page` fetches it live from `documentation.fontoxml.com` again. The page catalog (used by `list_pages` and `fonto://catalog`) is fetched once from the Fonto search index on first use and held in memory for the lifetime of the process.
 
 ## Self-hosting
 

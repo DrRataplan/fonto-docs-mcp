@@ -22,6 +22,8 @@
 <meta name="twitter:image" content="https://fonto-docs.elliat.nl/og-image.png">
 <meta name="msvalidate.01" content="95F42108B405F58439C50B0A4D02D2A0">
 <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+<link rel="icon" type="image/png" sizes="256x256" href="/favicon.png">
+<link rel="apple-touch-icon" href="/favicon.png">
 <script type="application/ld+json">
 {
   "@context": "https://schema.org",
@@ -102,9 +104,16 @@
 <p>The server is already running at <code>https://fonto-docs.elliat.nl/mcp</code> — no installation needed.</p>
 <p><strong>Claude Code:</strong></p>
 <pre>claude mcp add --transport http fonto-docs https://fonto-docs.elliat.nl/mcp</pre>
-<p><strong>Cursor / Claude Desktop / VS Code</strong> — add to <code>mcp.json</code>:</p>
+<p><strong>Claude Desktop / claude.ai</strong> — go to <em>Customize → Connectors</em>, click <em>+ → Add custom connector</em>, and paste <code>https://fonto-docs.elliat.nl/mcp</code>. No OAuth settings needed. (<a href="https://support.claude.com/en/articles/11175166-get-started-with-custom-connectors-using-remote-mcp">Help article</a>)</p>
+<p><strong>Cursor</strong> — add to <code>.cursor/mcp.json</code>:</p>
 <pre>{
   "mcpServers": {
+    "fonto-docs": { "type": "http", "url": "https://fonto-docs.elliat.nl/mcp" }
+  }
+}</pre>
+<p><strong>VS Code</strong> — add to <code>.vscode/mcp.json</code> (note the <code>servers</code> key):</p>
+<pre>{
+  "servers": {
     "fonto-docs": { "type": "http", "url": "https://fonto-docs.elliat.nl/mcp" }
   }
 }</pre>
@@ -119,7 +128,7 @@
 </div>
 
 <h2>How it works</h2>
-<p>The Fonto documentation site stores its content as XML files at predictable paths under <code>/static/xml/latest/</code>. This server fetches those files directly, parses them with <a href="https://github.com/nicktindall/slimdom">slimdom</a> and <a href="https://github.com/FontoXML/fontoxpath">fontoxpath</a>, and converts them to Markdown. Fonto uses two XML formats — DITA-structured guide pages and a custom API reference format — and the conversion handles both. Page content is cached in-process for 10 minutes to absorb repeated lookups in the same session.</p>
+<p>The Fonto documentation site stores its content as XML files at predictable paths under <code>/static/xml/latest/</code>. This server fetches those files directly, parses them with <a href="https://github.com/bwrrp/slimdom.js">slimdom</a> and <a href="https://github.com/FontoXML/fontoxpath">fontoxpath</a>, and converts them to Markdown. Fonto uses two XML formats — DITA-structured guide pages and a custom API reference format — and the conversion handles both. Page content is cached in-process for 10 minutes to absorb repeated lookups in the same session.</p>
 
 <h2>Documentation sections</h2>
 <p>Browse the full catalog filtered by section:</p>
