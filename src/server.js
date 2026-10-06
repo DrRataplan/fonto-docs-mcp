@@ -5,7 +5,6 @@ import { join, dirname } from "node:path";
 import { searchDocs, fetchPage, getCatalog, listPages, lookupApi } from "./fonto.js";
 import { handleMcpRequest, isModernRequest, MCP_TOOLS, MCP_RESOURCES, MCP_RESOURCE_TEMPLATES, SERVER_ICONS } from "./mcp.js";
 
-
 const PORT = process.env.PORT ?? 8080;
 const STATIC = join(dirname(fileURLToPath(import.meta.url)), "static");
 
