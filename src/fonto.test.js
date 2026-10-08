@@ -1,7 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { xmlToMarkdown } from "./fonto.js";
-import { handleMcpRequest, MCP_TOOLS, MCP_RESOURCES, MCP_RESOURCE_TEMPLATES } from "./mcp.js";
+import { xmlToMarkdown, normalizeApiName, findApiMatches } from "./fonto.js";
+import { handleMcpRequest, formatLookupResult, MCP_TOOLS, MCP_RESOURCES, MCP_RESOURCE_TEMPLATES } from "./mcp.js";
 
 const BASE = "https://documentation.fontoxml.com";
 
@@ -934,6 +934,79 @@ test("unknown methods are 404 under the modern revision but a plain JSON-RPC err
 
 test("notifications produce no response in either era", async () => {
   assert.strictEqual(await handleMcpRequest({ jsonrpc: "2.0", method: "notifications/initialized" }), null);
+});
+
+// ---------------------------------------------------------------------------
+// lookup_api — exact-name API resolution
+// ---------------------------------------------------------------------------
+
+const page = (slug, title, ancestry) => ({ slug, title, url: `${BASE}/latest/${slug}`, product: "generated-content", ancestry });
+const CATALOG = [
+  page("documentsmanager-f746b3a48442", "DocumentsManager", ["Classes", "API"]),
+  page("documentsmanager-49068070d10f", "documentsManager", ["Managers", "API"]),
+  page("initialdocumentsmanager-58f1be56c9c3", "initialDocumentsManager", ["Managers", "API"]),
+  page("createiconwidget-1234", "createIconWidget", ["Widgets", "API"]),
+  page("tables-guide-5678", "Tables", ["Configure"]),
+  page("tables-api-9abc", "tables", ["Families", "API"]),
+];
+
+test("normalizeApiName strips call syntax, import paths and extensions", () => {
+  assert.strictEqual(normalizeApiName("  createIconWidget() "), "createIconWidget");
+  assert.strictEqual(normalizeApiName("createIconWidget(name, options)"), "createIconWidget");
+  assert.strictEqual(normalizeApiName("fontoxml-families/src/createIconWidget.ts"), "createIconWidget");
+  assert.strictEqual(normalizeApiName("documentsManager.getNodeById"), "documentsManager.getNodeById");
+});
+
+test("findApiMatches prefers the exact-case match and keeps the other as alternative", () => {
+  const instance = findApiMatches(CATALOG, "documentsManager");
+  assert.deepStrictEqual(instance.map(p => p.slug), ["documentsmanager-49068070d10f", "documentsmanager-f746b3a48442"]);
+  const cls = findApiMatches(CATALOG, "DocumentsManager");
+  assert.strictEqual(cls[0].slug, "documentsmanager-f746b3a48442");
+});
+
+test("findApiMatches is case-insensitive when no exact-case match exists", () => {
+  assert.strictEqual(findApiMatches(CATALOG, "CREATEICONWIDGET")[0].slug, "createiconwidget-1234");
+});
+
+test("findApiMatches does not match substrings", () => {
+  const matches = findApiMatches(CATALOG, "DocumentsManager");
+  assert.ok(!matches.some(p => p.title === "initialDocumentsManager"));
+  assert.deepStrictEqual(findApiMatches(CATALOG, "Widget"), []);
+});
+
+test("findApiMatches ranks API pages above guides among case-insensitive matches", () => {
+  assert.strictEqual(findApiMatches(CATALOG, "TABLES")[0].slug, "tables-api-9abc");
+  assert.strictEqual(findApiMatches(CATALOG, "Tables")[0].slug, "tables-guide-5678");
+});
+
+test("findApiMatches resolves member access to the owner's page", () => {
+  assert.strictEqual(findApiMatches(CATALOG, "documentsManager.getNodeById()")[0].slug, "documentsmanager-49068070d10f");
+  assert.deepStrictEqual(findApiMatches(CATALOG, "nothing.here"), []);
+  assert.deepStrictEqual(findApiMatches(CATALOG, "   "), []);
+});
+
+test("formatLookupResult returns content, listing same-named alternatives", () => {
+  const [match, ...alternatives] = findApiMatches(CATALOG, "documentsManager");
+  const text = formatLookupResult("documentsManager", { found: true, match, content: "# body", alternatives, suggestions: [] });
+  assert.match(text, /^# body/);
+  assert.match(text, /Other pages with this name:\n- documentsmanager-f746b3a48442 — Classes > API > DocumentsManager/);
+  assert.strictEqual(formatLookupResult("x", { found: true, match, content: "# body", alternatives: [], suggestions: [] }), "# body");
+});
+
+test("formatLookupResult lists search suggestions when nothing matched", () => {
+  const text = formatLookupResult("registerWidget", {
+    found: false, alternatives: [],
+    suggestions: [{ title: "Create a widget", slug: "create-a-widget-1c568bad64a4", url: "", description: "" }],
+  });
+  assert.match(text, /No API page named "registerWidget"\./);
+  assert.match(text, /- Create a widget \(slug: create-a-widget-1c568bad64a4\)/);
+  assert.strictEqual(formatLookupResult("x", { found: false, alternatives: [], suggestions: [] }), 'No API page named "x".');
+});
+
+test("lookup_api rejects an empty name without touching the network", async () => {
+  const { body } = await handleMcpRequest({ jsonrpc: "2.0", id: 1, method: "tools/call", params: { name: "lookup_api", arguments: { name: " " } } });
+  assert.strictEqual(body.result.isError, true);
+  assert.match(body.result.content[0].text, /name must be a non-empty string/);
 });
 
 test("serverInfo advertises icons with HTTPS sources", async () => {

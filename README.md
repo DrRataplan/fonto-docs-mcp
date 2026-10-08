@@ -15,6 +15,7 @@ MCP (Model Context Protocol) is a standard way to give AI assistants access to e
 |---|---|
 | `search_fonto_docs` | Search by keyword — returns matching pages with titles, descriptions, and slugs |
 | `get_fonto_page` | Fetch the full content of a page by its slug |
+| `lookup_api` | Resolve an API name (e.g. `documentsManager`, `createIconWidget`) straight to its page in one call |
 | `list_pages` | List all pages matching a keyword, with full section hierarchy — useful for discovery |
 
 | Resource | What it contains |
@@ -71,6 +72,7 @@ The server also exposes a plain HTTP API if you want to use it without MCP:
 
 - `GET /search?q={query}` — search pages by keyword
 - `GET /page/{slug}` — fetch a page as Markdown
+- `GET /api/{name}` — fetch the page for an API symbol by exact name, as Markdown (404 with suggestions if none)
 - `GET /catalog` — full page catalog grouped by section; add `?section={keyword}` to filter
 
 ## How it works

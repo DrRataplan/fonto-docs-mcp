@@ -122,6 +122,7 @@
 <div class="tools">
   <div class="tool"><code>search_fonto_docs(query)</code><p>Search by keyword — returns matching pages with titles, descriptions, and slugs.</p></div>
   <div class="tool"><code>get_fonto_page(slug)</code><p>Fetch the full Markdown content of a page by its slug.</p></div>
+  <div class="tool"><code>lookup_api(name)</code><p>Resolve an API name like <code>documentsManager</code> straight to its documentation page in one call.</p></div>
   <div class="tool"><code>list_pages(keyword)</code><p>List pages matching a keyword, with full section breadcrumbs — great for discovery.</p></div>
   <div class="tool"><code>fonto://catalog</code> &amp; <code>fonto://page/{slug}</code><p>MCP resources: browse the full catalog or address any page directly.</p></div>
 </div>
@@ -139,6 +140,7 @@
 <p>The same data is available over plain HTTP, without MCP:</p>
 <div class="endpoint"><span class="badge">GET</span><code>/search?q={query}</code><span>Search pages — returns JSON — <a href="/search?q=documentsManager">example</a></span></div>
 <div class="endpoint"><span class="badge">GET</span><code>/page/{slug}</code><span>Fetch a page as Markdown — <a href="/page/documentsmanager-f746b3a48442">example</a></span></div>
+<div class="endpoint"><span class="badge">GET</span><code>/api/{name}</code><span>Fetch an API page by symbol name — <a href="/api/documentsManager">example</a></span></div>
 <div class="endpoint"><span class="badge">GET</span><code>/catalog</code><span>Full page hierarchy as Markdown — <a href="/catalog">browse</a> or <a href="/catalog?section=configure">filter by section</a></span></div>
 
 <h2>Related tools</h2>

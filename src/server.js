@@ -2,7 +2,7 @@ import { createServer } from "node:http";
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { join, dirname } from "node:path";
-import { searchDocs, fetchPage, getCatalog, listPages } from "./fonto.js";
+import { searchDocs, fetchPage, getCatalog, listPages, lookupApi } from "./fonto.js";
 import { handleMcpRequest, isModernRequest, MCP_TOOLS, MCP_RESOURCES, MCP_RESOURCE_TEMPLATES, SERVER_ICONS } from "./mcp.js";
 
 const PORT = process.env.PORT ?? 8080;
@@ -194,6 +194,19 @@ const server = createServer(async (req, res) => {
     try {
       logEvent({ type: "http_search", query: q });
       return json(res, { results: await searchDocs(q) });
+    } catch (err) {
+      return json(res, { error: err.message }, 500);
+    }
+  }
+
+  if (url.pathname.startsWith("/api/")) {
+    const name = decodeURIComponent(url.pathname.slice("/api/".length));
+    if (!name.trim()) return json(res, { error: "Missing API name" }, 400);
+    try {
+      logEvent({ type: "http_lookup_api", name });
+      const result = await lookupApi(name);
+      if (!result.found) return json(res, { error: `No API page named "${name}"`, suggestions: result.suggestions }, 404);
+      return text(res, result.content);
     } catch (err) {
       return json(res, { error: err.message }, 500);
     }
