@@ -39,6 +39,59 @@ const SECTION_GRID = SECTIONS.map(s =>
 
 const LANDING_HTML = INDEX_HTML.replace("{{SECTION_GRID}}", SECTION_GRID);
 
+const OPENAPI_SPEC = {
+  openapi: "3.1.0",
+  info: {
+    title: "Fonto Docs API",
+    version: "0.1.0",
+    description: "Plain HTTP access to the Fonto XML documentation, converted to Markdown. The same functionality is available as an MCP server at /mcp.",
+  },
+  servers: [{ url: "https://fonto-docs.elliat.nl" }],
+  paths: {
+    "/search": {
+      get: {
+        operationId: "searchDocs",
+        summary: "Search the Fonto documentation",
+        parameters: [{ name: "q", in: "query", required: true, schema: { type: "string" } }],
+        responses: {
+          200: { description: "Search results", content: { "application/json": { schema: { type: "object", properties: { results: { type: "array", items: { type: "object" } } } } } } },
+          400: { description: "Missing q parameter" },
+        },
+      },
+    },
+    "/page/{slug}": {
+      get: {
+        operationId: "getPage",
+        summary: "Get a documentation page as Markdown",
+        parameters: [{ name: "slug", in: "path", required: true, schema: { type: "string" } }],
+        responses: {
+          200: { description: "Page content", content: { "text/plain": { schema: { type: "string" } } } },
+          404: { description: "Unknown page" },
+        },
+      },
+    },
+    "/api/{name}": {
+      get: {
+        operationId: "lookupApi",
+        summary: "Resolve an API name (e.g. documentsManager) to its Markdown page",
+        parameters: [{ name: "name", in: "path", required: true, schema: { type: "string" } }],
+        responses: {
+          200: { description: "API page content", content: { "text/plain": { schema: { type: "string" } } } },
+          404: { description: "No such API; body lists suggestions" },
+        },
+      },
+    },
+    "/catalog": {
+      get: {
+        operationId: "getCatalog",
+        summary: "List documentation pages as a Markdown link list, optionally for one section",
+        parameters: [{ name: "section", in: "query", required: false, schema: { type: "string", enum: SECTIONS.map(s => s.slug) } }],
+        responses: { 200: { description: "Markdown list of pages", content: { "text/plain": { schema: { type: "string" } } } } },
+      },
+    },
+  },
+};
+
 // ---------------------------------------------------------------------------
 
 function logEvent(event) {
@@ -267,6 +320,7 @@ const server = createServer(async (req, res) => {
     res.writeHead(302, { "Location": "/og-image.svg" });
     return res.end();
   }
+  if (url.pathname === "/openapi.json") return json(res, OPENAPI_SPEC);
   if (url.pathname === "/llms.txt")     return text(res, LLMS_TXT);
   if (url.pathname === "/47ecb075b242427fa657a5e4aee339fd.txt") return text(res, "47ecb075b242427fa657a5e4aee339fd");
   if (url.pathname === "/robots.txt")   return text(res, "User-agent: *\nAllow: /\nSitemap: https://fonto-docs.elliat.nl/sitemap.xml\n");
