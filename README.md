@@ -56,28 +56,31 @@ Add it as a custom connector: go to **Customize → Connectors**, click **+** �
 
 (`claude_desktop_config.json` only launches local stdio servers, so it can't be used for this server.)
 
-### Mistral AI
+### Mistral AI / Vibe
 
-Add the server to your Mistral configuration. Create or edit `~/.mistral/mcp.json` (or the appropriate config path for your setup):
+The easiest way is through the **Connectors** page in the [Mistral console](https://console.mistral.ai/):
 
-```json
-{
-  "servers": {
-    "fonto-docs": {
-      "type": "http",
-      "url": "https://fonto-docs.elliat.nl/mcp"
-    }
-  }
-}
+1. Go to the **Connectors** page and click **+ Add Connector**.
+2. Open the **Custom MCP Connector** tab.
+3. Enter a name (e.g. `fonto-docs`) and the server URL `https://fonto-docs.elliat.nl/mcp`, then click **Connect**.
+
+No authentication is needed. Vibe automatically discovers connectors registered this way, so the
+tools are available in every Vibe session where you're signed in with your Mistral account — no
+local configuration required.
+
+Alternatively, add the server to your local Vibe configuration by editing `~/.vibe/config.toml`:
+
+```toml
+[[mcp_servers]]
+name = "fonto-docs"
+transport = "streamable-http"
+url = "https://fonto-docs.elliat.nl/mcp"
 ```
 
-Alternatively, if using the Mistral CLI, you can add it via:
+No `auth` block is needed — the server requires no authentication.
 
-```bash
-mistral mcp add fonto-docs https://fonto-docs.elliat.nl/mcp
-```
-
-Check the [Mistral MCP documentation](https://docs.mistral.ai/) for the latest configuration options.
+See the [MCP Connectors documentation](https://docs.mistral.ai/vibe/work/connectors/mcp-connectors)
+for more details.
 
 ## Usage examples
 
