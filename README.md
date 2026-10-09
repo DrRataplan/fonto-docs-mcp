@@ -56,6 +56,29 @@ Add it as a custom connector: go to **Customize â†’ Connectors**, click **+** â†
 
 (`claude_desktop_config.json` only launches local stdio servers, so it can't be used for this server.)
 
+### Mistral AI
+
+Add the server to your Mistral configuration. Create or edit `~/.mistral/mcp.json` (or the appropriate config path for your setup):
+
+```json
+{
+  "servers": {
+    "fonto-docs": {
+      "type": "http",
+      "url": "https://fonto-docs.elliat.nl/mcp"
+    }
+  }
+}
+```
+
+Alternatively, if using the Mistral CLI, you can add it via:
+
+```bash
+mistral mcp add fonto-docs https://fonto-docs.elliat.nl/mcp
+```
+
+Check the [Mistral MCP documentation](https://docs.mistral.ai/) for the latest configuration options.
+
 ## Usage examples
 
 Once connected, ask your AI assistant:
