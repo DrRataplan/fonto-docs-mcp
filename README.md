@@ -56,28 +56,22 @@ Add it as a custom connector: go to **Customize â†’ Connectors**, click **+** â†
 
 (`claude_desktop_config.json` only launches local stdio servers, so it can't be used for this server.)
 
-### Mistral AI
+### Mistral AI / Vibe
 
-Add the server to your Mistral configuration. Create or edit `~/.mistral/mcp.json` (or the appropriate config path for your setup):
-
-```json
-{
-  "servers": {
-    "fonto-docs": {
-      "type": "http",
-      "url": "https://fonto-docs.elliat.nl/mcp"
-    }
-  }
-}
-```
-
-Alternatively, if using the Mistral CLI, you can add it via:
+Add the server to your Vibe configuration via the CLI:
 
 ```bash
-mistral mcp add fonto-docs https://fonto-docs.elliat.nl/mcp
+vibe mcp add fonto-docs --url https://fonto-docs.elliat.nl/mcp --no-login
 ```
 
-Check the [Mistral MCP documentation](https://docs.mistral.ai/) for the latest configuration options.
+Or manually edit `~/.vibe/config.toml` to include:
+
+```toml
+[[mcpServers.fonto-docs]]
+url = "https://fonto-docs.elliat.nl/mcp"
+```
+
+Check the [Vibe MCP documentation](https://vibe.mistral.ai/) for the latest configuration options.
 
 ## Usage examples
 
