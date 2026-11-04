@@ -343,6 +343,10 @@ export async function handleMcpRequest(body, headers = {}) {
     });
   }
 
+  // ping exists only in legacy revisions; the receiver MUST answer with an
+  // empty result. The 2026-07-28 revision removed it (falls through to 404).
+  if (method === "ping" && !isModern) return res({ jsonrpc: "2.0", id, result: {} });
+
   if (method === "server/discover") {
     if (!isModern) return res({ jsonrpc: "2.0", id, error: { code: -32601, message: `Method not found: ${method}` } });
     return serverDiscoverResult(id);
