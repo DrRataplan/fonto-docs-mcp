@@ -815,6 +815,20 @@ test("legacy initialize handshake is unaffected", async () => {
   assert.strictEqual(body.result.serverInfo.name, "fonto-docs");
 });
 
+test("legacy ping answers with an empty result", async () => {
+  const { status, body } = await handleMcpRequest({ jsonrpc: "2.0", id: 7, method: "ping" });
+  assert.strictEqual(status, 200);
+  assert.deepStrictEqual(body, { jsonrpc: "2.0", id: 7, result: {} });
+});
+
+test("modern ping is method-not-found (removed in 2026-07-28)", async () => {
+  const meta = { "io.modelcontextprotocol/protocolVersion": "2026-07-28", "io.modelcontextprotocol/clientCapabilities": {} };
+  const headers = { "mcp-protocol-version": "2026-07-28", "mcp-method": "ping" };
+  const { status, body } = await handleMcpRequest({ jsonrpc: "2.0", id: 1, method: "ping", params: { _meta: meta } }, headers);
+  assert.strictEqual(status, 404);
+  assert.strictEqual(body.error.code, -32601);
+});
+
 test("legacy tools/list carries no modern envelope fields", async () => {
   const { status, body } = await handleMcpRequest({ jsonrpc: "2.0", id: 1, method: "tools/list" });
   assert.strictEqual(status, 200);
